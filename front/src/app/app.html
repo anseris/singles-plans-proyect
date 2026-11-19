@@ -1,0 +1,210 @@
+<header class="site-header">
+  <a class="brand" href="#" (click)="switchView(false); $event.preventDefault()">
+    <span class="brand-mark"><i class="pi pi-compass"></i></span>
+    <span>Singles<span class="brand-highlight">Plans</span></span>
+  </a>
+  <nav class="main-nav" aria-label="Navegación principal">
+    <a href="#planes" (click)="switchView(false); setCategory('all')">Experiencias</a>
+    <a href="#planes" (click)="switchView(false); setCategory('trip')">Viajes</a>
+    <a href="#como-funciona" (click)="switchView(false)">Cómo funciona</a>
+  </nav>
+  <div class="header-actions">
+    @if (user(); as currentUser) {
+      @if (currentUser.role === 'admin') {
+        <button class="admin-link" type="button" (click)="switchView(!adminView())">
+          <i class="pi" [class.pi-shield]="!adminView()" [class.pi-compass]="adminView()"></i>
+          {{ adminView() ? 'Vista pública' : 'Administración' }}
+        </button>
+      }
+      <span class="user-greeting">Hola, {{ currentUser.name.split(' ')[0] }}</span>
+      <button class="text-button" type="button" (click)="logout()">Salir</button>
+    } @else {
+      <button class="text-button desktop-only" type="button" (click)="openAuth('login')">Iniciar sesión</button>
+      <p-button label="Crear cuenta" (onClick)="openAuth('register')" />
+    }
+  </div>
+</header>
+
+@if (adminView() && isAdmin) {
+  <main class="admin-page">
+    <div class="admin-heading">
+      <div>
+        <p class="eyebrow">ESPACIO DE GESTIÓN</p>
+        <h1>Tu agenda SinglesPlans</h1>
+        <p>Organiza y publica los eventos y viajes que compartirás con la comunidad.</p>
+      </div>
+      <p-button label="Ver página pública" icon="pi pi-arrow-up-right" severity="secondary" (onClick)="switchView(false)" />
+    </div>
+    <div class="admin-summary">
+      <div><span class="summary-icon pending"><i class="pi pi-clock"></i></span><strong>{{ pendingCount() }}</strong><span>Por revisar</span></div>
+      <div><span class="summary-icon published"><i class="pi pi-check"></i></span><strong>{{ publishedCount() }}</strong><span>Publicados</span></div>
+      <div><span class="summary-icon all-plans"><i class="pi pi-map"></i></span><strong>{{ events().length }}</strong><span>Planes totales</span></div>
+    </div>
+    @if (error()) { <div class="alert error"><i class="pi pi-exclamation-circle"></i>{{ error() }}</div> }
+    @if (notice()) { <div class="alert success"><i class="pi pi-check-circle"></i>{{ notice() }}</div> }
+    <section class="admin-list">
+      <div class="list-heading">
+        <div><h2>Todos los planes</h2><span>{{ events().length }} en total</span></div>
+        <p-button label="Crear experiencia" icon="pi pi-plus" (onClick)="openCreateEvent()" />
+      </div>
+      @if (loading()) {
+        <div class="empty-state"><i class="pi pi-spin pi-spinner"></i><p>Cargando planes...</p></div>
+      } @else if (events().length === 0) {
+        <div class="empty-state"><i class="pi pi-map"></i><h3>Aún no hay experiencias</h3><p>Crea tu primer evento o viaje y publícalo en SinglesPlans.</p><p-button label="Crear experiencia" icon="pi pi-plus" (onClick)="openCreateEvent()" /></div>
+      } @else {
+        @for (event of events(); track event._id) {
+          <article class="admin-event">
+            <div class="event-type-icon" [class.trip]="event.type === 'trip'" [class.event]="event.type === 'event'"><i class="pi" [class.pi-sun]="event.type === 'excursion'" [class.pi-send]="event.type === 'trip'" [class.pi-ticket]="event.type === 'event'"></i></div>
+            <div class="admin-event-copy">
+              <div class="admin-event-title"><h3>{{ event.title }}</h3><p-tag [value]="statusLabel(event.status)" [severity]="event.status === 'published' ? 'success' : event.status === 'pending' ? 'warn' : 'secondary'" /></div>
+              <p><i class="pi pi-map-marker"></i>{{ event.location }} <span>·</span> {{ formatDate(event.startsAt) }} <span>·</span> {{ event.createdBy?.name || 'Comunidad' }}</p>
+            </div>
+            <div class="admin-event-actions">
+              @if (event.status === 'pending') {
+                <p-button label="Publicar" icon="pi pi-check" size="small" (onClick)="setStatus(event, 'published')" />
+                <p-button label="Rechazar" severity="secondary" size="small" (onClick)="setStatus(event, 'rejected')" />
+              }
+              <button class="icon-action" type="button" aria-label="Editar plan" (click)="openEditEvent(event)"><i class="pi pi-pencil"></i></button>
+              <button class="icon-action danger" type="button" aria-label="Eliminar plan" (click)="deleteEvent(event)"><i class="pi pi-trash"></i></button>
+            </div>
+          </article>
+        }
+      }
+    </section>
+  </main>
+} @else {
+  <main>
+    <section class="hero">
+      <div class="hero-content">
+        <div class="hero-pill"><span></span> VIAJES Y PLANES PARA SINGLES</div>
+        <h1>Conoce gente.<br /><span>Vive el viaje.</span></h1>
+        <p>Escapadas, viajes en grupo y planes para compartir. Tú eliges la experiencia; nosotros organizamos el punto de encuentro.</p>
+        <div class="hero-actions">
+          <p-button label="Descubrir experiencias" icon="pi pi-arrow-down" (onClick)="switchView(false); scrollToPlans()" />
+          <button class="hero-secondary" type="button" (click)="setCategory('trip'); scrollToPlans()"><i class="pi pi-send"></i> Ver viajes</button>
+        </div>
+        <div class="social-proof"><div class="avatar-stack"><span>M</span><span>L</span><span>J</span><span><i class="pi pi-heart-fill"></i></span></div><span>Grupos pequeños, experiencias compartidas</span></div>
+      </div>
+      <div class="hero-art" aria-label="Ilustración decorativa de una escapada">
+        <div class="sun-disc"></div>
+        <div class="hill hill-back"></div>
+        <div class="hill hill-front"></div>
+        <div class="route-line"></div>
+        <div class="floating-note"><span class="note-icon"><i class="pi pi-map-marker"></i></span><span><strong>Rutas con encanto</strong><small>Hay una esperándote</small></span></div>
+        <div class="floating-star"><i class="pi pi-sparkles"></i></div>
+      </div>
+      <div class="hero-bottom"><span>VIAJES EN GRUPO · EVENTOS · NUEVAS CONEXIONES</span><i class="pi pi-arrow-down"></i></div>
+    </section>
+
+    <section class="plans-section" id="planes">
+      <div class="section-heading">
+        <div><p class="eyebrow">ORGANIZADOS POR SINGLESPLANS</p><h2>{{ isAdmin ? 'Tu próxima agenda' : 'Próximas experiencias' }}</h2><p>Eventos, excursiones y viajes en grupo para compartir nuevas historias.</p></div>
+      </div>
+      <div class="discovery-toolbar">
+        <div class="category-filters" aria-label="Filtrar por tipo de experiencia">
+          <button type="button" [class.active]="activeCategory() === 'all'" (click)="setCategory('all')">Todo</button>
+          <button type="button" [class.active]="activeCategory() === 'event'" (click)="setCategory('event')"><i class="pi pi-users"></i> Eventos</button>
+          <button type="button" [class.active]="activeCategory() === 'excursion'" (click)="setCategory('excursion')"><i class="pi pi-sun"></i> Excursiones</button>
+          <button type="button" [class.active]="activeCategory() === 'trip'" (click)="setCategory('trip')"><i class="pi pi-send"></i> Viajes</button>
+        </div>
+        <label class="search-box"><i class="pi pi-search"></i><input type="search" placeholder="Destino o experiencia" [value]="searchTerm()" (input)="updateSearch($event)" /></label>
+      </div>
+      @if (error()) { <div class="alert error"><i class="pi pi-exclamation-circle"></i>{{ error() }}</div> }
+      @if (notice()) { <div class="alert success"><i class="pi pi-check-circle"></i>{{ notice() }}</div> }
+      <div class="plan-grid">
+        @if (loading()) {
+          <div class="empty-state"><i class="pi pi-spin pi-spinner"></i><p>Buscando planes para ti...</p></div>
+        } @else if (events().length === 0) {
+          <div class="empty-state"><i class="pi pi-compass"></i><h3>Estamos preparando nuevas experiencias</h3><p>Vuelve pronto para descubrir los próximos planes de SinglesPlans.</p></div>
+        } @else if (filteredEvents().length === 0) {
+          <div class="empty-state"><i class="pi pi-search"></i><h3>No encontramos experiencias con esos filtros</h3><p>Prueba con otro destino o selecciona otra categoría.</p><button class="outline-button" type="button" (click)="clearFilters()">Limpiar filtros</button></div>
+        } @else {
+          @for (event of filteredEvents(); track event._id; let index = $index) {
+            <article class="plan-card" [class.admin-card]="adminView()">
+              <div class="card-art" [class.art-sea]="event.type === 'excursion'" [class.art-mountain]="event.type === 'trip'" [class.art-city]="event.type === 'event'" [class.art-alt]="index % 2 === 1">
+                @if (event.imageUrl) {
+                  <img class="card-photo" [src]="event.imageUrl" [alt]="event.title" />
+                } @else {
+                  <div class="art-sun"></div><div class="art-land land-one"></div><div class="art-land land-two"></div>
+                }
+                <span class="type-badge">{{ typeLabel(event.type) }}</span>
+                <span class="date-badge"><strong>{{ event.startsAt | date:'dd' }}</strong>{{ event.startsAt | date:'MMM' }}</span>
+              </div>
+              <div class="card-content">
+                <div class="card-meta"><span><i class="pi pi-map-marker"></i>{{ event.location }}</span><span><i class="pi pi-users"></i>{{ remaining(event) }} plazas</span></div>
+                <h3>{{ event.title }}</h3>
+                <p class="card-description">{{ event.description }}</p>
+                <div class="card-footer">
+                  <span class="price">{{ event.price === 0 ? 'Gratis' : (event.price | currency:'EUR':'symbol':'1.0-0':'es-ES') }} <small>/ persona</small></span>
+                  @if (adminView()) {
+                    <p-tag [value]="statusLabel(event.status)" [severity]="event.status === 'published' ? 'success' : event.status === 'pending' ? 'warn' : 'secondary'" />
+                  } @else {
+                    <p-button label="Reservar plaza" icon="pi pi-arrow-up-right" size="small" [disabled]="remaining(event) === 0" (onClick)="enroll(event)" />
+                  }
+                </div>
+                @if (adminView() && event.status === 'pending') {
+                  <div class="card-admin-actions"><p-button label="Publicar" icon="pi pi-check" size="small" (onClick)="setStatus(event, 'published')" /><p-button label="Rechazar" severity="secondary" size="small" (onClick)="setStatus(event, 'rejected')" /></div>
+                }
+              </div>
+            </article>
+          }
+        }
+      </div>
+    </section>
+
+    <section class="how-section" id="como-funciona">
+      <div class="how-intro"><p class="eyebrow">UNA COMUNIDAD, MUCHAS FORMAS DE CONOCERSE</p><h2>El viaje empieza<br /><span>en buena compañía.</span></h2><p>Organizamos cada experiencia para que solo tengas que elegir destino, reservar y venir con ganas de disfrutar.</p></div>
+      <div class="steps">
+        <article><span class="step-number">01</span><i class="pi pi-compass"></i><h3>Elige tu experiencia</h3><p>Desde una tarde diferente hasta un viaje de varios días.</p></article>
+        <article><span class="step-number">02</span><i class="pi pi-ticket"></i><h3>Reserva tu plaza</h3><p>Consulta fechas, destino, precio y plazas disponibles.</p></article>
+        <article><span class="step-number">03</span><i class="pi pi-heart"></i><h3>Comparte el camino</h3><p>Ven con ganas de descubrir lugares y conocer gente nueva.</p></article>
+      </div>
+    </section>
+
+    <section class="cta-section">
+      <div><p class="eyebrow">TU PRÓXIMA HISTORIA TE ESTÁ ESPERANDO</p><h2>Haz sitio para<br />algo distinto.</h2><p>Descubre viajes en grupo, escapadas y eventos organizados para compartir.</p></div>
+      <p-button label="Ver experiencias" icon="pi pi-arrow-up-right" (onClick)="scrollToPlans()" />
+      <span class="cta-decoration"><i class="pi pi-sparkles"></i></span>
+    </section>
+  </main>
+}
+
+<footer class="site-footer">
+  <a class="brand footer-brand" href="#"><span class="brand-mark"><i class="pi pi-compass"></i></span><span>Singles<span class="brand-highlight">Plans</span></span></a>
+  <span>Encuentra tu próxima experiencia.</span>
+  <span>© 2026 SinglesPlans</span>
+</footer>
+
+<p-dialog [visible]="dialogOpen()" (visibleChange)="dialogOpen.set($event)" [header]="authMode() === 'login' ? 'Qué bueno verte' : 'Únete a SinglesPlans'" [modal]="true" [draggable]="false" [resizable]="false" styleClass="auth-dialog">
+  <p class="dialog-subtitle">{{ authMode() === 'login' ? 'Inicia sesión y encuentra tu próximo plan.' : 'Crea tu cuenta y empieza a descubrir.' }}</p>
+  @if (error()) { <div class="alert error dialog-alert">{{ error() }}</div> }
+  <form class="auth-form" (ngSubmit)="submitAuth()">
+    @if (authMode() === 'register') {
+      <label>Nombre<input pInputText name="name" [(ngModel)]="credentials.name" autocomplete="name" required /></label>
+    }
+    <label>Email<input pInputText name="email" type="email" [(ngModel)]="credentials.email" autocomplete="email" required /></label>
+    <label>Contraseña<input pInputText name="password" type="password" [(ngModel)]="credentials.password" [attr.minlength]="authMode() === 'register' ? 8 : null" autocomplete="current-password" required /></label>
+    <p-button [label]="authMode() === 'login' ? 'Iniciar sesión' : 'Crear mi cuenta'" icon="pi pi-arrow-right" type="submit" styleClass="w-full" />
+  </form>
+  <p class="auth-switch">
+    {{ authMode() === 'login' ? '¿Aún no tienes cuenta?' : '¿Ya tienes una cuenta?' }}
+    <button type="button" (click)="openAuth(authMode() === 'login' ? 'register' : 'login')">{{ authMode() === 'login' ? 'Regístrate' : 'Inicia sesión' }}</button>
+  </p>
+</p-dialog>
+
+<p-dialog [visible]="createOpen()" (visibleChange)="createOpen.set($event)" [header]="editingId() ? 'Editar experiencia' : 'Crear experiencia'" [modal]="true" [draggable]="false" [resizable]="false" styleClass="create-dialog">
+  <p class="dialog-subtitle">{{ editingId() ? 'Actualiza los detalles de este evento o viaje.' : 'Añade una experiencia para publicarla en la agenda de SinglesPlans.' }}</p>
+  @if (error()) { <div class="alert error dialog-alert">{{ error() }}</div> }
+  <form class="event-form" (ngSubmit)="submitEvent()">
+    <label class="full-field">Nombre del plan<input pInputText name="title" [(ngModel)]="newEvent.title" maxlength="120" required placeholder="Ej. Atardecer en la sierra" /></label>
+    <label>Tipo<select name="type" [(ngModel)]="newEvent.type"><option value="excursion">Excursión</option><option value="trip">Viaje</option><option value="event">Evento</option></select></label>
+    <label>Ciudad o lugar<input pInputText name="location" [(ngModel)]="newEvent.location" required placeholder="Madrid" /></label>
+    <label>Empieza<input pInputText name="startsAt" type="datetime-local" [(ngModel)]="newEvent.startsAt" required /></label>
+    <label>Termina<input pInputText name="endsAt" type="datetime-local" [(ngModel)]="newEvent.endsAt" required /></label>
+    <label>Precio por persona (€)<input pInputText name="price" type="number" min="0" [(ngModel)]="newEvent.price" required /></label>
+    <label>Plazas<input pInputText name="capacity" type="number" min="1" [(ngModel)]="newEvent.capacity" required /></label>
+    <label class="full-field">Imagen (URL)<input pInputText name="imageUrl" type="url" [(ngModel)]="newEvent.imageUrl" placeholder="https://..." /></label>
+    <label class="full-field">Descripción<textarea name="description" [(ngModel)]="newEvent.description" rows="4" maxlength="5000" required placeholder="¿Qué haremos? ¿Qué hay que llevar?"></textarea></label>
+    <p-button [label]="editingId() ? 'Guardar cambios' : 'Publicar experiencia'" [icon]="editingId() ? 'pi pi-check' : 'pi pi-send'" type="submit" styleClass="full-field" />
+  </form>
+</p-dialog>
