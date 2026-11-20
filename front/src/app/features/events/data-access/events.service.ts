@@ -1,7 +1,7 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
-import type { EventItem } from '../models/event.model';
+import type { EventCreateInput, EventItem } from '../models/event.model';
 
 @Injectable({ providedIn: 'root' })
 export class EventsService {
@@ -21,7 +21,7 @@ export class EventsService {
   }
 
   create(
-    event: Omit<EventItem, '_id' | 'status' | 'enrolledCount' | 'createdBy' | 'group'> & { groupId: string },
+    event: EventCreateInput,
     isAdmin: boolean
   ): Observable<EventItem> {
     return this.http.post<EventItem>(isAdmin ? '/api/admin/events' : '/api/events', event);

@@ -13,6 +13,7 @@
   <app-admin-dashboard
     [events]="vm.events()"
     [groups]="vm.groups()"
+    [interests]="vm.availableGroupInterests()"
     [loading]="vm.loading()"
     [error]="vm.error()"
     [notice]="vm.notice()"
@@ -20,6 +21,7 @@
     [publishedCount]="vm.publishedCount()"
     (publicViewRequested)="vm.switchView(false)"
     (groupCreationRequested)="vm.openCreateGroup()"
+    (interestCreateRequested)="vm.createInterest($event)"
     (eventCreationRequested)="vm.openCreateEvent()"
     (statusChanged)="vm.setStatus($event.event, $event.status)"
     (editRequested)="vm.openEditEvent($event)"
@@ -27,13 +29,16 @@
   />
 } @else if (vm.selectedGroup(); as group) {
   <main>
-    <app-group-detail [group]="group" (backRequested)="vm.closeGroupDetails()" (eventRequested)="vm.createEventInGroup($event)" />
+    <app-group-detail [group]="group" [canCreateEvent]="vm.canCreateEventInSelectedGroup" (backRequested)="vm.closeGroupDetails()" (eventRequested)="vm.createEventInGroup($event)" />
   </main>
 } @else {
   <main>
     <app-events-page
       [activeSection]="vm.activeSection()"
-      [groups]="vm.groups()"
+      [myGroups]="vm.myGroups()"
+      [allGroups]="vm.allGroups()"
+      [interestGroups]="vm.interestGroups()"
+      [canCreateAnyEvent]="vm.isAdmin"
       [authenticated]="!!vm.user()"
       [events]="vm.events()"
       [filteredEvents]="vm.filteredEvents()"
@@ -46,6 +51,7 @@
       (loginRequested)="vm.openAuth('register')"
       (groupSelected)="vm.openGroupDetails($event)"
       (eventRequested)="vm.createEventInGroup($event)"
+      (joinRequested)="vm.joinGroup($event)"
       (enrollRequested)="vm.enroll($event)"
       (statusChanged)="vm.setStatus($event.event, $event.status)"
       (editRequested)="vm.openEditEvent($event)"
@@ -76,53 +82,193 @@
   </p>
 </p-dialog>
 
-<p-dialog [visible]="vm.groupOpen()" (visibleChange)="vm.groupOpen.set($event)" header="Crear grupo" [modal]="true" [draggable]="false" [resizable]="false" [style]="{ width: 'min(440px, calc(100vw - 32px))' }" styleClass="create-dialog group-dialog">
-  <p class="dialog-subtitle">Los grupos reúnen a personas con intereses o destinos en común. Indica el rango de edad orientativo de sus participantes. Después podrás proponer eventos sociales dentro del grupo; los viajes y excursiones los organiza SinglesPlans.</p>
+<p-dialog [visible]="vm.groupOpen()" (visibleChange)="vm.groupOpen.set($event)" [header]="'Crear grupo · Paso ' + vm.groupStep() + ' de 5'" [modal]="true" [draggable]="false" [resizable]="false" [style]="{ width: 'min(480px, calc(100vw - 32px))' }" styleClass="create-dialog group-dialog">
+  <p class="dialog-subtitle">Completa los datos de tu grupo. Solo el nombre y la descripción son obligatorios.</p>
   @if (vm.error()) { <div class="alert error dialog-alert">{{ vm.error() }}</div> }
-  <form class="event-form group-form" (ngSubmit)="vm.submitGroup()">
-    <label class="full-field">Nombre del grupo<input pInputText name="groupName" [(ngModel)]="vm.newGroup.name" maxlength="100" required placeholder="Ej. Escapadas por España" /></label>
-    <label class="full-field">Ciudad o zona<input pInputText name="groupCity" [(ngModel)]="vm.newGroup.city" maxlength="120" placeholder="Ej. Madrid y alrededores" /></label>
-    <label class="full-field">Imagen del grupo<input class="group-image-input" name="groupImage" type="file" accept="image/jpeg,image/png,image/webp" (change)="vm.onGroupImageSelected($event)" /><small>JPG, PNG o WebP · máximo 2 MB</small></label>
-    @if (vm.newGroup.imageUrl) {
-      <img class="group-image-preview full-field" [src]="vm.newGroup.imageUrl" alt="Vista previa de la imagen del grupo" />
+  <ol class="group-step-indicator" aria-label="Pasos para crear un grupo">
+    @for (label of vm.groupStepLabels; track $index) {
+      <li [attr.aria-current]="vm.groupStep() === $index + 1 ? 'step' : null" [class.current]="vm.groupStep() === $index + 1" [class.completed]="vm.groupStep() > $index + 1">
+        <span>{{ $index + 1 }}</span><small>{{ label }}</small>
+      </li>
     }
-    <fieldset class="age-range-field full-field">
-      <legend>Rango de edad</legend>
-      <label>Edad mínima<input pInputText name="minAge" type="number" min="18" max="100" [(ngModel)]="vm.newGroup.minAge" required /></label>
-      <span class="age-range-separator">a</span>
-      <label>Edad máxima<input pInputText name="maxAge" type="number" min="18" max="100" [(ngModel)]="vm.newGroup.maxAge" required /></label>
-      <small>De 18 a 100 años.</small>
-    </fieldset>
-    <label class="full-field">Descripción<textarea name="groupDescription" [(ngModel)]="vm.newGroup.description" rows="4" maxlength="1500" required placeholder="¿Qué tipo de experiencias compartirá este grupo?"></textarea></label>
-    <p-button label="Crear grupo y continuar" icon="pi pi-arrow-right" type="submit" styleClass="full-field" />
+  </ol>
+  <form class="event-form group-form" (ngSubmit)="vm.groupStep() === 5 ? vm.submitGroup() : vm.nextGroupStep()">
+    @if (vm.groupStep() === 1) {
+      <label class="full-field">Nombre del grupo<input pInputText name="groupName" [(ngModel)]="vm.newGroup.name" maxlength="100" required placeholder="Ej. Escapadas por España" /></label>
+    } @else if (vm.groupStep() === 2) {
+      <label class="full-field">Zona o ciudad<input pInputText name="groupCity" [(ngModel)]="vm.newGroup.city" maxlength="120" placeholder="Ej. Madrid y alrededores" /></label>
+    } @else if (vm.groupStep() === 3) {
+      <label class="full-field">Imagen del grupo<input class="group-image-input" name="groupImage" type="file" accept="image/jpeg,image/png,image/webp" (change)="vm.onGroupImageSelected($event)" /><small>JPG, PNG o WebP · máximo 2 MB</small></label>
+      @if (vm.newGroup.imageUrl) {
+        <img class="group-image-preview full-field" [src]="vm.newGroup.imageUrl" alt="Vista previa de la imagen del grupo" />
+      }
+    } @else if (vm.groupStep() === 4) {
+      <fieldset class="group-interests full-field">
+        <legend>¿Qué planes os interesan?</legend>
+        @if (vm.availableGroupInterests().length > 0) {
+          <div class="group-interest-options">
+            @for (interest of vm.availableGroupInterests(); track interest._id) {
+              <button
+                class="group-interest-tag"
+                [class.selected]="vm.newGroup.interests.includes(interest.name)"
+                [attr.aria-pressed]="vm.newGroup.interests.includes(interest.name)"
+                type="button"
+                (click)="vm.toggleGroupInterest(interest.name)"
+              >{{ interest.name }}</button>
+            }
+          </div>
+        } @else {
+          <p class="group-interest-empty">Todavía no hay intereses disponibles. El administrador los añadirá próximamente.</p>
+        }
+      </fieldset>
+    } @else {
+      <label class="full-field">Descripción<textarea name="groupDescription" [(ngModel)]="vm.newGroup.description" rows="4" maxlength="1500" required placeholder="¿Qué tipo de experiencias compartirá este grupo?"></textarea></label>
+    }
+    <div class="group-form-actions full-field">
+      @if (vm.groupStep() > 1) {
+        <button class="group-step-back" type="button" (click)="vm.previousGroupStep()"><i class="pi pi-arrow-left"></i> Atrás</button>
+      } @else {
+        <span></span>
+      }
+      @if (vm.groupStep() > 1 && vm.groupStep() < 5) {
+        <button class="group-step-skip" type="button" (click)="vm.skipGroupStep()">Omitir paso</button>
+      }
+      @if (vm.groupStep() < 5) {
+        <p-button label="Continuar" icon="pi pi-arrow-right" iconPos="right" type="button" (onClick)="vm.nextGroupStep()" />
+      } @else {
+        <p-button label="Crear grupo" icon="pi pi-check" type="submit" />
+      }
+    </div>
   </form>
 </p-dialog>
 
-<p-dialog [visible]="vm.createOpen()" (visibleChange)="vm.createOpen.set($event)" [header]="vm.editingId() ? 'Editar experiencia' : 'Crear experiencia'" [modal]="true" [draggable]="false" [resizable]="false" styleClass="create-dialog">
-  <p class="dialog-subtitle">{{ vm.editingId() ? 'Actualiza los detalles de este evento o viaje.' : 'Añade una experiencia para publicarla en la agenda de SinglesPlans.' }}</p>
+<p-dialog [visible]="vm.createOpen()" (visibleChange)="vm.createOpen.set($event)" [header]="vm.editingId() ? 'Editar experiencia' : 'Crear experiencia'" [modal]="true" [draggable]="false" [resizable]="false" [style]="{ width: 'min(560px, calc(100vw - 32px))' }" styleClass="create-dialog event-dialog">
+  <p class="dialog-subtitle">{{ vm.editingId() ? 'Actualiza los detalles de esta experiencia paso a paso.' : 'Completa los pasos para publicar una nueva experiencia.' }}</p>
   @if (vm.error()) { <div class="alert error dialog-alert">{{ vm.error() }}</div> }
-  <form class="event-form" (ngSubmit)="vm.submitEvent()">
-    <label class="full-field">Grupo
-      <select name="groupId" [(ngModel)]="vm.newEvent.groupId" required>
+  <form class="event-form event-wizard-form" (ngSubmit)="vm.eventStep() === 9 ? vm.submitEvent() : vm.nextEventStep()">
+    <div class="event-context-fields full-field">
+      <select name="groupId" aria-label="Grupo" [(ngModel)]="vm.newEvent.groupId" required>
         <option value="" disabled>Selecciona un grupo</option>
         @for (group of vm.groups(); track group._id) {
           <option [value]="group._id">{{ group.name }}@if (group.city) { · {{ group.city }} }</option>
         }
       </select>
-    </label>
-    <label class="full-field">Nombre del plan<input pInputText name="title" [(ngModel)]="vm.newEvent.title" maxlength="120" required placeholder="Ej. Atardecer en la sierra" /></label>
-    @if (vm.isAdmin) {
-      <label>Tipo<select name="type" [(ngModel)]="vm.newEvent.type"><option value="event">Evento</option><option value="excursion">Excursión</option><option value="trip">Viaje</option></select></label>
+    </div>
+    <ol class="group-step-indicator event-step-indicator full-field" aria-label="Pasos para crear una experiencia">
+      @for (label of vm.eventStepLabels; track $index) {
+        <li [attr.aria-label]="'Paso ' + ($index + 1) + ': ' + label" [attr.aria-current]="vm.eventStep() === $index + 1 ? 'step' : null" [class.current]="vm.eventStep() === $index + 1" [class.completed]="vm.eventStep() > $index + 1" [title]="label">
+          <span>{{ $index + 1 }}</span>
+        </li>
+      }
+    </ol>
+    <h2 class="event-current-step full-field">{{ vm.eventStepLabels[vm.eventStep() - 1] }}</h2>
+    @if (vm.eventStep() === 1) {
+      <label class="full-field">Nombre del evento<input pInputText name="title" [(ngModel)]="vm.newEvent.title" maxlength="120" required placeholder="Ej. Atardecer en la sierra" /></label>
+    } @else if (vm.eventStep() === 2) {
+      <label class="full-field">Zona o ciudad<input pInputText name="location" [(ngModel)]="vm.newEvent.location" maxlength="160" required placeholder="Ej. Madrid" /></label>
+    } @else if (vm.eventStep() === 3) {
+      <div class="full-field event-meeting-point">
+        <label for="meeting-point-search">Punto de encuentro</label>
+        <div class="google-places-control">
+          <input
+            pInputText
+            id="meeting-point-search"
+            name="meetingPointName"
+            appGooglePlaceAutocomplete
+            [googlePlacesApiKey]="vm.googleMapsApiKey"
+            [ngModel]="vm.newEvent.meetingPoint.name"
+            (ngModelChange)="vm.setManualEventMeetingPoint($event)"
+            (placeSelected)="vm.setEventMeetingPoint($event)"
+            (placeError)="vm.setEventPlaceError($event)"
+            maxlength="160"
+            required
+            role="combobox"
+            aria-autocomplete="list"
+            aria-controls="meeting-point-suggestions"
+            aria-expanded="false"
+            placeholder="Busca un local o una dirección"
+          />
+        </div>
+        @if (vm.googleMapsApiKey) {
+          <small>Escribe el nombre del local o una dirección y selecciona una sugerencia de Google Maps.</small>
+        } @else {
+          <small>Las sugerencias automáticas requieren una clave válida de Google Places en public/google-maps-config.js.</small>
+        }
+      @if (vm.newEvent.meetingPoint.name) {
+        <p class="meeting-point-selected"><i class="pi pi-map-marker"></i><span><strong>{{ vm.newEvent.meetingPoint.name }}</strong><small>{{ vm.newEvent.meetingPoint.address }}</small></span></p>
+      }
+      </div>
+    } @else if (vm.eventStep() === 4) {
+      <div class="full-field event-image-upload">
+        <input id="event-image" class="event-image-input" name="eventImage" type="file" accept="image/jpeg,image/png,image/webp" (change)="vm.onEventImageSelected($event)" />
+        <label for="event-image" class="event-image-attach"><i class="pi pi-paperclip" aria-hidden="true"></i> Adjuntar imagen</label>
+        <small>JPG, PNG o WebP · máximo 2 MB</small>
+      </div>
+      @if (vm.newEvent.imageUrl) {
+        <img class="group-image-preview full-field" [src]="vm.newEvent.imageUrl" alt="Vista previa de la imagen del evento" />
+      }
+    } @else if (vm.eventStep() === 5) {
+      <fieldset class="group-interests full-field">
+        <legend>Intereses del evento</legend>
+        @if (vm.availableGroupInterests().length > 0) {
+          <div class="group-interest-options">
+            @for (interest of vm.availableGroupInterests(); track interest._id) {
+              <button class="group-interest-tag" [class.selected]="vm.newEvent.interests.includes(interest.name)" [attr.aria-pressed]="vm.newEvent.interests.includes(interest.name)" type="button" (click)="vm.toggleEventInterest(interest.name)">{{ interest.name }}</button>
+            }
+          </div>
+        } @else {
+          <p class="group-interest-empty">Todavía no hay intereses disponibles.</p>
+        }
+      </fieldset>
+    } @else if (vm.eventStep() === 6) {
+      <div class="full-field event-age-step">
+        <label class="event-switch"><span><strong>Cualquier edad</strong><small>A partir de 18 años</small></span><input name="anyAge" type="checkbox" role="switch" [checked]="vm.eventAnyAge()" (change)="vm.toggleEventAnyAge(!vm.eventAnyAge())" /></label>
+        <fieldset class="event-age-range" [disabled]="vm.eventAnyAge()">
+          <label>Edad mínima<input pInputText name="minAge" type="number" min="18" max="100" [(ngModel)]="vm.eventMinimumAge" [disabled]="vm.eventAnyAge()" /></label>
+          <span>a</span>
+          <label>Edad máxima<input pInputText name="maxAge" type="number" min="18" max="100" [(ngModel)]="vm.eventMaximumAge" [disabled]="vm.eventAnyAge()" /></label>
+        </fieldset>
+      </div>
+    } @else if (vm.eventStep() === 7) {
+      <div class="event-schedule full-field">
+        <label>Empieza<input pInputText name="startsAt" type="datetime-local" [(ngModel)]="vm.newEvent.startsAt" required /></label>
+        <label>Termina<input pInputText name="endsAt" type="datetime-local" [(ngModel)]="vm.newEvent.endsAt" required /></label>
+        <fieldset class="event-time-of-day">
+          <legend>Horario</legend>
+          <div class="event-time-options">
+            <label><input type="radio" name="timeOfDay" value="afternoon" [checked]="vm.newEvent.timeOfDay === 'afternoon'" (change)="vm.setEventTimeOfDay('afternoon')" /><span>Tarde</span></label>
+            <label><input type="radio" name="timeOfDay" value="night" [checked]="vm.newEvent.timeOfDay === 'night'" (change)="vm.setEventTimeOfDay('night')" /><span>Noche</span></label>
+            <label><input type="radio" name="timeOfDay" value="all-day" [checked]="vm.newEvent.timeOfDay === 'all-day'" (change)="vm.setEventTimeOfDay('all-day')" /><span>Todo el día</span></label>
+          </div>
+        </fieldset>
+      </div>
+    } @else if (vm.eventStep() === 8) {
+      <div class="full-field event-capacity-price">
+        <label>Plazas disponibles<input pInputText name="capacity" type="number" min="1" step="1" [(ngModel)]="vm.newEvent.capacity" required /></label>
+        <div class="event-price-inline">
+          <label class="event-switch"><span><strong>Gratis</strong><small>Sin coste para las personas asistentes</small></span><input name="isFree" type="checkbox" role="switch" [checked]="vm.eventIsFree()" (change)="vm.toggleEventFree(!vm.eventIsFree())" /></label>
+          <fieldset class="event-price-fieldset" [disabled]="vm.eventIsFree()">
+            <label>Precio (€)<input pInputText name="price" type="number" min="0" step="0.01" [(ngModel)]="vm.newEvent.price" required /></label>
+          </fieldset>
+        </div>
+      </div>
     } @else {
-      <label>Tipo de experiencia<input pInputText value="Evento social" readonly /></label>
+      <label class="full-field">Descripción<textarea name="description" [(ngModel)]="vm.newEvent.description" rows="5" maxlength="5000" required placeholder="¿Qué haremos? ¿Qué hay que llevar?"></textarea></label>
     }
-    <label>Ciudad o lugar<input pInputText name="location" [(ngModel)]="vm.newEvent.location" required placeholder="Madrid" /></label>
-    <label>Empieza<input pInputText name="startsAt" type="datetime-local" [(ngModel)]="vm.newEvent.startsAt" required /></label>
-    <label>Termina<input pInputText name="endsAt" type="datetime-local" [(ngModel)]="vm.newEvent.endsAt" required /></label>
-    <label>Precio por persona (€)<input pInputText name="price" type="number" min="0" [(ngModel)]="vm.newEvent.price" required /></label>
-    <label>Plazas<input pInputText name="capacity" type="number" min="1" [(ngModel)]="vm.newEvent.capacity" required /></label>
-    <label class="full-field">Imagen (URL)<input pInputText name="imageUrl" type="url" [(ngModel)]="vm.newEvent.imageUrl" placeholder="https://..." /></label>
-    <label class="full-field">Descripción<textarea name="description" [(ngModel)]="vm.newEvent.description" rows="4" maxlength="5000" required placeholder="¿Qué haremos? ¿Qué hay que llevar?"></textarea></label>
-    <p-button [label]="vm.editingId() ? 'Guardar cambios' : 'Publicar experiencia'" [icon]="vm.editingId() ? 'pi pi-check' : 'pi pi-send'" type="submit" styleClass="full-field" />
+    <div class="group-form-actions full-field">
+      @if (vm.eventStep() > 1) {
+        <button class="group-step-back" type="button" (click)="vm.previousEventStep()"><i class="pi pi-arrow-left"></i> Atrás</button>
+      } @else {
+        <span></span>
+      }
+      @if (vm.eventStep() === 4 || vm.eventStep() === 5) {
+        <button class="group-step-skip" type="button" (click)="vm.skipEventStep()">Omitir paso</button>
+      }
+      @if (vm.eventStep() < 9) {
+        <p-button label="Continuar" icon="pi pi-arrow-right" iconPos="right" type="button" (onClick)="vm.nextEventStep()" />
+      } @else {
+        <p-button [label]="vm.editingId() ? 'Guardar cambios' : 'Publicar experiencia'" [icon]="vm.editingId() ? 'pi pi-check' : 'pi pi-send'" type="submit" />
+      }
+    </div>
   </form>
 </p-dialog>

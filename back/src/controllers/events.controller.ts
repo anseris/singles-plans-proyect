@@ -3,7 +3,7 @@ import mongoose from 'mongoose';
 import { Event } from '../models/event.model.js';
 import { Enrollment } from '../models/enrollment.model.js';
 import { Group } from '../models/group.model.js';
-import { eventFields, isValidEventInput } from '../services/event-input.js';
+import { eventFields, hasKnownInterests, isValidEventInput } from '../services/event-input.js';
 import type { AuthenticatedRequest } from '../middleware/auth.middleware.js';
 
 export async function listPublic(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
@@ -45,7 +45,7 @@ export async function listMine(req: AuthenticatedRequest, res: Response, next: N
 export async function createCommunityEvent(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
   try {
     const input = req.body as Record<string, unknown>;
-    if (!isValidEventInput(input, ['event'])) {
+    if (!isValidEventInput(input, ['event']) || !(await hasKnownInterests(input))) {
       res.status(400).json({ message: 'Para crear un evento, selecciona tu grupo y comprueba los datos. Los viajes y excursiones solo los organiza SinglesPlans.' });
       return;
     }

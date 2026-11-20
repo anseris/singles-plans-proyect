@@ -10,6 +10,7 @@ import type { GroupItem } from '../../models/group.model';
 })
 export class GroupDetail {
   readonly group = input.required<GroupItem>();
+  readonly canCreateEvent = input(false);
   readonly backRequested = output<void>();
   readonly eventRequested = output<GroupItem>();
 }

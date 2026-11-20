@@ -4,7 +4,7 @@
     @if (group().imageUrl) {
       <img class="group-detail-image" [src]="group().imageUrl" [alt]="'Imagen del grupo ' + group().name" />
     } @else {
-      <div class="group-detail-image group-image-placeholder"><i class="pi pi-users"></i></div>
+      <div class="group-detail-image group-image-placeholder" aria-hidden="true">{{ group().name.trim().charAt(0).toLocaleUpperCase('es-ES') || '?' }}</div>
     }
     <div class="group-detail-content">
       <p class="eyebrow">GRUPO DE LA COMUNIDAD</p>
@@ -16,7 +16,16 @@
         }
       </div>
       <p class="group-detail-description">{{ group().description }}</p>
-      <p-button label="Crear evento" icon="pi pi-plus" (onClick)="eventRequested.emit(group())" />
+      @if (group().interests?.length) {
+        <div class="group-detail-interests" aria-label="Intereses del grupo">
+          @for (interest of group().interests; track interest) {
+            <span>{{ interest }}</span>
+          }
+        </div>
+      }
+      @if (canCreateEvent()) {
+        <p-button label="Crear evento" icon="pi pi-plus" (onClick)="eventRequested.emit(group())" />
+      }
     </div>
   </article>
 </section>

@@ -3,12 +3,14 @@
 .group-back-button i { margin-right: 7px; }
 .group-detail-card { display: grid; grid-template-columns: minmax(250px, 42%) 1fr; overflow: hidden; max-width: 1000px; margin: 0 auto; border: 1px solid var(--line); border-radius: 18px; background: white; }
 .group-detail-image { width: 100%; min-height: 340px; height: 100%; object-fit: cover; }
-.group-image-placeholder { display: grid; place-items: center; background: #e7f0ec; color: var(--sea); font-size: 30px; }
+.group-image-placeholder { display: grid; place-items: center; background: #e7f0ec; color: var(--sea); font: 800 76px Manrope,sans-serif; }
 .group-detail-content { align-self: center; padding: 34px; }
 .group-detail-content h1 { margin: 10px 0 16px; font: 800 clamp(28px, 4vw, 42px) Manrope,sans-serif; }
 .group-detail-meta { display: flex; flex-wrap: wrap; gap: 14px; color: var(--muted); font-size: 12px; }
 .group-detail-meta i { margin-right: 6px; color: var(--sea); }
 .group-detail-description { margin: 22px 0; color: #536868; font-size: 14px; line-height: 1.8; white-space: pre-line; }
+.group-detail-interests { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 22px; }
+.group-detail-interests span { padding: 6px 10px; border-radius: 999px; background: #e7f0ec; color: var(--sea); font-size: 11px; font-weight: 700; }
 @media (max-width: 620px) {
   .group-detail-page { padding: 25px 20px 55px; }
   .group-detail-card { grid-template-columns: 1fr; }

@@ -13,7 +13,10 @@ import { GroupCollection } from '../../../groups/components/group-collection/gro
 })
 export class EventsPage {
   readonly activeSection = input.required<'events' | 'trips'>();
-  readonly groups = input.required<GroupItem[]>();
+  readonly myGroups = input.required<GroupItem[]>();
+  readonly allGroups = input.required<GroupItem[]>();
+  readonly interestGroups = input<GroupItem[]>([]);
+  readonly canCreateAnyEvent = input(false);
   readonly authenticated = input.required<boolean>();
   readonly events = input.required<EventItem[]>();
   readonly filteredEvents = input.required<EventItem[]>();
@@ -26,6 +29,7 @@ export class EventsPage {
   readonly loginRequested = output<void>();
   readonly groupSelected = output<GroupItem>();
   readonly eventRequested = output<GroupItem>();
+  readonly joinRequested = output<GroupItem>();
   readonly enrollRequested = output<EventItem>();
   readonly statusChanged = output<{ event: EventItem; status: 'published' | 'rejected' }>();
   readonly editRequested = output<EventItem>();

@@ -1,10 +1,12 @@
 import { Router } from 'express';
 import { requireAuth } from '../middleware/auth.middleware.js';
-import { createGroup, listMine } from '../controllers/groups.controller.js';
+import { createGroup, joinGroup, listAll, listInterests, listMine } from '../controllers/groups.controller.js';
 
 const router = Router();
-router.use(requireAuth);
-router.get('/mine', listMine);
-router.post('/', createGroup);
+router.get('/', listAll);
+router.get('/mine', requireAuth, listMine);
+router.get('/interests', requireAuth, listInterests);
+router.post('/:id/join', requireAuth, joinGroup);
+router.post('/', requireAuth, createGroup);
 
 export default router;

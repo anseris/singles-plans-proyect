@@ -12,22 +12,26 @@ API REST con Express, TypeScript y MongoDB/Mongoose.
 ## Colecciones
 
 - `users`: perfil, email único, hash bcrypt de contraseña y rol (`user` o `admin`).
-- `groups`: grupos creados por usuarios registrados, con nombre, descripción, ciudad, rango de edad (18–100 años) e imagen opcional.
-- `events`: excursiones, viajes y eventos asociados obligatoriamente a un grupo, además de fechas, aforo, precio y estado.
+- `groups`: grupos creados por usuarios registrados, con nombre y descripción obligatorios, y ciudad, imagen, intereses y rango de edad opcionales.
+- `groupinterests`: catálogo de intereses para los grupos, gestionado por administración; cada nombre es único sin distinguir mayúsculas.
+- `groupmemberships`: uniones directas de usuarios a grupos, con índice único por grupo y usuario.
+- `events`: excursiones, viajes y eventos asociados obligatoriamente a un grupo, además del punto de encuentro de Google Places, intereses, edad, horario, fechas, aforo, precio y estado.
 - `enrollments`: plazas reservadas, con índice único por evento y usuario.
 
 ## Endpoints principales
 
 - `POST /api/auth/register`, `POST /api/auth/login`, `GET /api/auth/me`
-- `GET /api/groups/mine`, `POST /api/groups` (requieren sesión)
+- `GET /api/groups` (público), `GET /api/groups/mine`, `GET /api/groups/interests`, `POST /api/groups/:id/join` y `POST /api/groups` (requieren sesión salvo el listado público)
+- `GET /api/interests` (catálogo público para el formulario de grupos)
 - `GET /api/events?section=events|trips`, `GET /api/events/mine`, `POST /api/events`, `POST /api/events/:id/enroll`
 - `GET /api/admin/groups`, `POST /api/admin/groups`, `DELETE /api/admin/groups/:id`
+- `GET /api/admin/interests`, `POST /api/admin/interests`
 - `GET /api/admin/events`, `POST /api/admin/events`, `PATCH /api/admin/events/:id`, `DELETE /api/admin/events/:id`
 - `GET /api/health`
 
-Las vistas públicas de eventos (`section=events`) y viajes (`section=trips`) solo devuelven planes publicados; la segunda incluye viajes y excursiones. Los usuarios registrados pueden crear grupos y proponer eventos sociales (`type: "event"`) dentro de sus propios grupos; estas propuestas quedan pendientes de aprobación. Solo las rutas administrativas permiten crear viajes y excursiones (`type: "trip"` o `"excursion"`). Los usuarios pueden reservar plazas iniciando sesión. El script `seed:admin` puede promover una cuenta existente sin cambiar su contraseña.
+Las vistas públicas de eventos (`section=events`) y viajes (`section=trips`) solo devuelven planes publicados; la segunda incluye viajes y excursiones. Los usuarios registrados pueden crear grupos y proponer eventos sociales (`type: "event"`) dentro de sus propios grupos; estas propuestas quedan pendientes de aprobación. Solo las rutas administrativas permiten crear viajes y excursiones (`type: "trip"` o `"excursion"`). Los eventos guardan la zona o ciudad y el punto de encuentro (nombre, dirección, ID y coordenadas de Google Places), intereses, edad mínima/máxima (o `null` para cualquier edad a partir de 18), franja horaria, fechas, aforo y precio. Los usuarios pueden reservar plazas iniciando sesión. El script `seed:admin` puede promover una cuenta existente sin cambiar su contraseña.
 
-Un usuario registrado crea un grupo indicando un rango de edad y, opcionalmente, una imagen JPG, PNG o WebP de hasta 2 MB; puede proponer eventos dentro de ese grupo. El administrador puede elegir cualquiera de los grupos al organizar viajes y excursiones oficiales. Al conectar, la API crea las colecciones `users`, `groups`, `events` y `enrollments` si aún no existen, y asegura sus índices. MongoDB solo muestra la base de datos después de crear estas colecciones.
+Un usuario registrado crea un grupo indicando nombre y descripción; la ciudad, una imagen JPG, PNG o WebP de hasta 2 MB y los intereses son opcionales. Administración añade los intereses desde su panel y el formulario los consulta desde MongoDB. La API solo permite asociar a un grupo intereses existentes. El usuario puede proponer eventos dentro de su grupo. Puede unirse a grupos directamente; además, reservar un evento cuenta como interés en el grupo que lo organiza. `GET /api/groups/interests` combina ambas fuentes. El administrador puede elegir cualquiera de los grupos al organizar viajes y excursiones oficiales. Al conectar, la API crea las colecciones `users`, `groups`, `groupmemberships`, `groupinterests`, `events` y `enrollments` si aún no existen, y asegura sus índices. MongoDB solo muestra la base de datos después de crear estas colecciones.
 
 ## Organización del código
 

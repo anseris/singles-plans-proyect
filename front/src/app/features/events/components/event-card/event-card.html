@@ -3,20 +3,32 @@
     @if (event().imageUrl) {
       <img class="card-photo" [src]="event().imageUrl" [alt]="event().title" />
     } @else {
-      <div class="art-sun"></div><div class="art-land land-one"></div><div class="art-land land-two"></div>
+      <div class="event-image-placeholder" aria-hidden="true">{{ eventInitial(event().title) }}</div>
     }
     <span class="type-badge">{{ typeLabel(event().type) }}</span>
     <span class="date-badge"><strong>{{ event().startsAt | date:'dd' }}</strong>{{ event().startsAt | date:'MMM' }}</span>
   </div>
   <div class="card-content">
     <div class="card-meta"><span><i class="pi pi-map-marker"></i>{{ event().location }}</span><span><i class="pi pi-users"></i>{{ remaining(event()) }} plazas</span></div>
+    @if (event().meetingPoint; as meetingPoint) {
+      <a class="event-meeting-point" [href]="meetingPointMapUrl(event())" target="_blank" rel="noopener noreferrer">
+        <i class="pi pi-map-marker"></i><span><strong>{{ meetingPoint.name }}</strong><small>{{ meetingPoint.address }}</small></span><i class="pi pi-external-link"></i>
+      </a>
+    }
     @if (event().group) {
       <div class="event-group"><i class="pi pi-users"></i><span>{{ event().group?.name }}@if (event().group?.city) { · {{ event().group?.city }} }</span></div>
     }
     <h3>{{ event().title }}</h3>
     <p class="card-description">{{ event().description }}</p>
+    <div class="event-detail-tags">
+      <span class="event-detail-tag"><i class="pi pi-clock"></i>{{ timeOfDayLabel(event()) }}</span>
+      <span class="event-detail-tag"><i class="pi pi-users"></i>{{ ageRangeLabel(event()) }}</span>
+      @for (interest of event().interests ?? []; track interest) {
+        <span class="event-interest-tag">{{ interest }}</span>
+      }
+    </div>
     <div class="card-footer">
-      <span class="price">{{ event().price === 0 ? 'Gratis' : (event().price | currency:'EUR':'symbol':'1.0-0':'es-ES') }} <small>/ persona</small></span>
+      <span class="price">{{ event().price === 0 ? 'Gratis' : (event().price | currency:'EUR':'symbol':'1.0-2':'es-ES') }} <small>/ persona</small></span>
       @if (adminView()) {
         <p-tag [value]="statusLabel(event().status)" [severity]="event().status === 'published' ? 'success' : event().status === 'pending' ? 'warn' : 'secondary'" />
       } @else {

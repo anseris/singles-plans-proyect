@@ -1,18 +1,21 @@
 import { Component, input, output } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 import { ButtonModule } from 'primeng/button';
+import { InputTextModule } from 'primeng/inputtext';
 import { TagModule } from 'primeng/tag';
 import type { EventItem, EventStatus } from '../../../events/models/event.model';
-import type { GroupItem } from '../../../groups/models/group.model';
+import type { GroupItem, InterestItem } from '../../../groups/models/group.model';
 
 @Component({
   selector: 'app-admin-dashboard',
-  imports: [ButtonModule, TagModule],
+  imports: [FormsModule, ButtonModule, InputTextModule, TagModule],
   templateUrl: './admin-dashboard.html',
   styleUrl: './admin-dashboard.scss'
 })
 export class AdminDashboard {
   readonly events = input.required<EventItem[]>();
   readonly groups = input.required<GroupItem[]>();
+  readonly interests = input.required<InterestItem[]>();
   readonly loading = input.required<boolean>();
   readonly error = input.required<string>();
   readonly notice = input.required<string>();
@@ -20,10 +23,19 @@ export class AdminDashboard {
   readonly publishedCount = input.required<number>();
   readonly publicViewRequested = output<void>();
   readonly groupCreationRequested = output<void>();
+  readonly interestCreateRequested = output<string>();
   readonly eventCreationRequested = output<void>();
   readonly statusChanged = output<{ event: EventItem; status: 'published' | 'rejected' }>();
   readonly editRequested = output<EventItem>();
   readonly deleteRequested = output<EventItem>();
+  interestDraft = '';
+
+  createInterest(): void {
+    const name = this.interestDraft.trim();
+    if (!name) return;
+    this.interestCreateRequested.emit(name);
+    this.interestDraft = '';
+  }
 
   statusLabel(status: EventStatus): string {
     return { pending: 'Pendiente', published: 'Publicado', rejected: 'Rechazado', cancelled: 'Cancelado' }[status];

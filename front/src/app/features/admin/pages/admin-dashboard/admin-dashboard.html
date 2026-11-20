@@ -33,9 +33,28 @@
       <p class="group-empty">Todavía no has creado grupos. Empieza por crear el primero.</p>
     }
   </section>
+  <section class="admin-list group-management">
+    <div class="list-heading">
+      <div><h2>2. Intereses</h2><span>{{ interests().length }} intereses disponibles</span></div>
+    </div>
+    <p class="group-help">Añade opciones que las personas podrán seleccionar al crear su grupo.</p>
+    <form class="interest-create-form" (ngSubmit)="createInterest()">
+      <input pInputText name="interestName" [(ngModel)]="interestDraft" maxlength="40" required placeholder="Ej. Senderismo" aria-label="Nombre del interés" />
+      <p-button label="Añadir interés" icon="pi pi-plus" type="submit" [disabled]="!interestDraft.trim()" />
+    </form>
+    @if (interests().length > 0) {
+      <div class="interest-tag-list" aria-label="Intereses disponibles">
+        @for (interest of interests(); track interest._id) {
+          <p-tag [value]="interest.name" />
+        }
+      </div>
+    } @else {
+      <p class="group-empty">Todavía no hay intereses. Añade el primero para que aparezca en el formulario de grupos.</p>
+    }
+  </section>
   <section class="admin-list">
     <div class="list-heading">
-      <div><h2>2. Eventos y viajes</h2><span>{{ events().length }} experiencias en total</span></div>
+      <div><h2>3. Eventos y viajes</h2><span>{{ events().length }} experiencias en total</span></div>
       <p-button label="Crear experiencia" icon="pi pi-plus" [disabled]="groups().length === 0" (onClick)="eventCreationRequested.emit()" />
     </div>
     @if (loading()) {

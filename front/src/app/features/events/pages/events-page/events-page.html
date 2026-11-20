@@ -30,12 +30,16 @@
 
 @if (activeSection() === 'events') {
   <app-group-collection
-    [groups]="groups()"
+    [myGroups]="myGroups()"
+    [allGroups]="allGroups()"
+    [interestGroups]="interestGroups()"
     [authenticated]="authenticated()"
+    [canCreateAnyEvent]="canCreateAnyEvent()"
     (createRequested)="createGroupRequested.emit()"
     (loginRequested)="loginRequested.emit()"
     (groupSelected)="groupSelected.emit($event)"
     (eventRequested)="eventRequested.emit($event)"
+    (joinRequested)="joinRequested.emit($event)"
   />
 }
 

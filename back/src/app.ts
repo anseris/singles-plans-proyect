@@ -4,6 +4,7 @@ import adminRoutes from './routes/admin.routes.js';
 import authRoutes from './routes/auth.routes.js';
 import eventsRoutes from './routes/events.routes.js';
 import groupsRoutes from './routes/groups.routes.js';
+import interestsRoutes from './routes/interests.routes.js';
 
 const app = express();
 
@@ -13,6 +14,7 @@ app.use(express.json({ limit: '3mb' }));
 app.get('/api/health', (_req, res) => res.json({ ok: true, message: 'Singles Plans API is running.' }));
 app.use('/api/auth', authRoutes);
 app.use('/api/groups', groupsRoutes);
+app.use('/api/interests', interestsRoutes);
 app.use('/api/events', eventsRoutes);
 app.use('/api/admin', adminRoutes);
 

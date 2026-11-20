@@ -1,15 +1,21 @@
 import { Schema, model } from 'mongoose';
 
+const ageRangeSchema = new Schema(
+  {
+    min: { type: Number, min: 18, max: 100, required: true },
+    max: { type: Number, min: 18, max: 100, required: true }
+  },
+  { _id: false }
+);
+
 const groupSchema = new Schema(
   {
     name: { type: String, required: true, trim: true, maxlength: 100 },
     description: { type: String, required: true, trim: true, maxlength: 1500 },
     city: { type: String, trim: true, maxlength: 120, default: '' },
-    ageRange: {
-      min: { type: Number, min: 18, max: 100, required: true },
-      max: { type: Number, min: 18, max: 100, required: true }
-    },
+    ageRange: { type: ageRangeSchema, required: false },
     imageUrl: { type: String, maxlength: 3_000_000, default: '' },
+    interests: { type: [{ type: String, trim: true, maxlength: 40 }], default: [] },
     createdBy: { type: Schema.Types.ObjectId, ref: 'User', required: true }
   },
   { timestamps: true }

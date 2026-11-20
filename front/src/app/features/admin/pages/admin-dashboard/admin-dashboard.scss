@@ -6,6 +6,9 @@
 .group-chip strong,.group-chip small { display: block; }
 .group-chip strong { color: var(--ink); font: 700 11px Manrope,sans-serif; }
 .group-chip small { margin-top: 4px; color: var(--muted); font-size: 9px; }
+.interest-create-form { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 16px; }
+.interest-create-form input { flex: 1 1 220px; min-width: 0; }
+.interest-tag-list { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
 .list-heading > div { display: flex; align-items: center; gap: 12px; }
 .list-heading .p-button { font-size: 11px; padding: .68rem 1rem; }
 @media (max-width: 620px) {

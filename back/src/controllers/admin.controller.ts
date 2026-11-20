@@ -3,7 +3,8 @@ import mongoose from 'mongoose';
 import { Event } from '../models/event.model.js';
 import { Enrollment } from '../models/enrollment.model.js';
 import { Group } from '../models/group.model.js';
-import { eventFields, isValidEventInput } from '../services/event-input.js';
+import { GroupInterest } from '../models/group-interest.model.js';
+import { eventFields, hasKnownInterests, isValidEventInput } from '../services/event-input.js';
 import type { AuthenticatedRequest } from '../middleware/auth.middleware.js';
 
 export async function listGroups(_req: Request, res: Response, next: NextFunction): Promise<void> {
@@ -11,6 +12,41 @@ export async function listGroups(_req: Request, res: Response, next: NextFunctio
     const groups = await Group.find().sort({ name: 1 }).lean();
     res.json(groups);
   } catch (error) {
+    next(error);
+  }
+}
+
+export async function listGroupInterests(_req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const interests = await GroupInterest.find().sort({ name: 1 }).lean();
+    res.json(interests);
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function createGroupInterest(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const name = typeof req.body['name'] === 'string' ? req.body['name'].trim() : '';
+    if (!name || name.length > 40) {
+      res.status(400).json({ message: 'El interés debe tener entre 1 y 40 caracteres.' });
+      return;
+    }
+
+    const key = name.toLocaleLowerCase('es');
+    const existing = await GroupInterest.findOne({ key });
+    if (existing) {
+      res.status(409).json({ message: 'Ese interés ya está registrado.' });
+      return;
+    }
+
+    const interest = await GroupInterest.create({ name, key });
+    res.status(201).json(interest);
+  } catch (error) {
+    if (typeof error === 'object' && error !== null && 'code' in error && error.code === 11000) {
+      res.status(409).json({ message: 'Ese interés ya está registrado.' });
+      return;
+    }
     next(error);
   }
 }
@@ -40,7 +76,7 @@ export async function deleteGroup(req: Request, res: Response, next: NextFunctio
 export async function createEvent(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
   try {
     const input = req.body as Record<string, unknown>;
-    if (!isValidEventInput(input, ['excursion', 'trip', 'event'])) {
+    if (!isValidEventInput(input, ['excursion', 'trip', 'event']) || !(await hasKnownInterests(input))) {
       res.status(400).json({ message: 'Revisa los datos, selecciona un grupo existente y comprueba las fechas, el precio y el aforo.' });
       return;
     }
@@ -81,8 +117,12 @@ export async function updateEvent(req: Request, res: Response, next: NextFunctio
       return;
     }
     const update: Record<string, unknown> = {};
-    for (const field of ['title', 'description', 'type', 'location', 'startsAt', 'endsAt', 'price', 'capacity', 'imageUrl']) {
+    for (const field of ['title', 'description', 'type', 'location', 'meetingPoint', 'interests', 'ageRange', 'timeOfDay', 'startsAt', 'endsAt', 'price', 'capacity', 'imageUrl']) {
       if (field in req.body) update[field] = req.body[field];
+    }
+    if ('interests' in req.body && !(await hasKnownInterests({ interests: req.body['interests'] }))) {
+      res.status(400).json({ message: 'Selecciona intereses existentes en el catálogo.' });
+      return;
     }
     if ('groupId' in req.body) {
       if (!mongoose.isValidObjectId(req.body['groupId']) || !(await Group.exists({ _id: req.body['groupId'] }))) {
