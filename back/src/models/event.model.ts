@@ -1,5 +1,7 @@
 import { Schema, model } from 'mongoose';
 
+export type EventType = 'excursion' | 'trip' | 'event';
+
 const eventSchema = new Schema(
   {
     title: { type: String, required: true, trim: true, maxlength: 120 },
@@ -12,6 +14,7 @@ const eventSchema = new Schema(
     capacity: { type: Number, min: 1, required: true },
     enrolledCount: { type: Number, min: 0, default: 0 },
     imageUrl: { type: String, trim: true, default: '' },
+    group: { type: Schema.Types.ObjectId, ref: 'Group', required: true },
     status: {
       type: String,
       enum: ['pending', 'published', 'rejected', 'cancelled'],

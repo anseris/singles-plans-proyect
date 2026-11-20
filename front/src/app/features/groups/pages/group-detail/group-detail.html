@@ -1,0 +1,22 @@
+<section class="group-detail-page">
+  <button class="group-back-button" type="button" (click)="backRequested.emit()"><i class="pi pi-arrow-left"></i> Volver a eventos</button>
+  <article class="group-detail-card">
+    @if (group().imageUrl) {
+      <img class="group-detail-image" [src]="group().imageUrl" [alt]="'Imagen del grupo ' + group().name" />
+    } @else {
+      <div class="group-detail-image group-image-placeholder"><i class="pi pi-users"></i></div>
+    }
+    <div class="group-detail-content">
+      <p class="eyebrow">GRUPO DE LA COMUNIDAD</p>
+      <h1>{{ group().name }}</h1>
+      <div class="group-detail-meta">
+        <span><i class="pi pi-map-marker"></i>{{ group().city || 'Comunidad online' }}</span>
+        @if (group().ageRange; as ageRange) {
+          <span><i class="pi pi-users"></i>{{ ageRange.min }}–{{ ageRange.max }} años</span>
+        }
+      </div>
+      <p class="group-detail-description">{{ group().description }}</p>
+      <p-button label="Crear evento" icon="pi pi-plus" (onClick)="eventRequested.emit(group())" />
+    </div>
+  </article>
+</section>

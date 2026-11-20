@@ -1,0 +1,92 @@
+<section class="hero">
+  <div class="hero-content">
+    @if (activeSection() === 'events') {
+      <div class="hero-pill"><span></span> EVENTOS CREADOS POR LA COMUNIDAD</div>
+      <h1>Encuentra tu gente.<br /><span>Haz un plan.</span></h1>
+      <p>Descubre eventos creados por otros usuarios, crea tu propio grupo y comparte actividades con gente nueva.</p>
+    } @else {
+      <div class="hero-pill"><span></span> VIAJES ORGANIZADOS POR SINGLESPLANS</div>
+      <h1>Tu próximo viaje.<br /><span>En buena compañía.</span></h1>
+      <p>Explora viajes y excursiones organizados por SinglesPlans. Consulta la oferta y reserva tu plaza cuando quieras.</p>
+    }
+    <div class="hero-actions">
+      <p-button [label]="activeSection() === 'events' ? 'Ver eventos' : 'Ver viajes'" icon="pi pi-arrow-down" (onClick)="plansRequested.emit()" />
+      @if (activeSection() === 'events') {
+        <button class="hero-secondary" type="button" (click)="createGroupRequested.emit()"><i class="pi pi-users"></i> Crear grupo</button>
+      }
+    </div>
+    <div class="social-proof"><div class="avatar-stack"><span>M</span><span>L</span><span>J</span><span><i class="pi pi-heart-fill"></i></span></div><span>{{ activeSection() === 'events' ? 'Eventos de la comunidad, para la comunidad' : 'Viajes en grupo organizados por SinglesPlans' }}</span></div>
+  </div>
+  <div class="hero-art" aria-label="Ilustración decorativa de una escapada">
+    <div class="sun-disc"></div>
+    <div class="hill hill-back"></div>
+    <div class="hill hill-front"></div>
+    <div class="route-line"></div>
+    <div class="floating-note"><span class="note-icon"><i class="pi pi-map-marker"></i></span><span><strong>Rutas con encanto</strong><small>Hay una esperándote</small></span></div>
+    <div class="floating-star"><i class="pi pi-sparkles"></i></div>
+  </div>
+  <div class="hero-bottom"><span>VIAJES EN GRUPO · EVENTOS · NUEVAS CONEXIONES</span><i class="pi pi-arrow-down"></i></div>
+</section>
+
+@if (activeSection() === 'events') {
+  <app-group-collection
+    [groups]="groups()"
+    [authenticated]="authenticated()"
+    (createRequested)="createGroupRequested.emit()"
+    (loginRequested)="loginRequested.emit()"
+    (groupSelected)="groupSelected.emit($event)"
+    (eventRequested)="eventRequested.emit($event)"
+  />
+}
+
+<section class="plans-section" id="planes">
+  <div class="section-heading">
+    @if (activeSection() === 'events') {
+      <div><p class="eyebrow">EVENTOS DE LA COMUNIDAD</p><h2>Eventos</h2><p>Eventos publicados por otros usuarios. Inicia sesión para apuntarte o crea un grupo y organiza el tuyo.</p></div>
+    } @else {
+      <div><p class="eyebrow">ORGANIZADOS POR SINGLESPLANS</p><h2>Viajes</h2><p>Viajes y excursiones organizados por SinglesPlans. Para reservar plaza, inicia sesión.</p></div>
+    }
+  </div>
+  <div class="discovery-toolbar">
+    <span class="result-context">{{ filteredEvents().length }} {{ activeSection() === 'events' ? 'eventos publicados' : 'viajes disponibles' }}</span>
+    <label class="search-box"><i class="pi pi-search"></i><input type="search" [placeholder]="activeSection() === 'events' ? 'Buscar eventos o lugares' : 'Buscar viajes o destinos'" [value]="searchTerm()" (input)="searchChanged.emit($event)" /></label>
+  </div>
+  @if (error()) { <div class="alert error"><i class="pi pi-exclamation-circle"></i>{{ error() }}</div> }
+  @if (notice()) { <div class="alert success"><i class="pi pi-check-circle"></i>{{ notice() }}</div> }
+  <div class="plan-grid">
+    @if (loading()) {
+      <div class="empty-state"><i class="pi pi-spin pi-spinner"></i><p>{{ activeSection() === 'events' ? 'Buscando eventos...' : 'Buscando viajes...' }}</p></div>
+    } @else if (events().length === 0) {
+      <div class="empty-state"><i class="pi" [class.pi-calendar]="activeSection() === 'events'" [class.pi-send]="activeSection() === 'trips'"></i><h3>{{ activeSection() === 'events' ? 'Todavía no hay eventos publicados' : 'Estamos preparando nuevos viajes' }}</h3><p>{{ activeSection() === 'events' ? 'Vuelve pronto para ver los eventos publicados por la comunidad.' : 'Vuelve pronto para descubrir los próximos viajes y excursiones.' }}</p></div>
+    } @else if (filteredEvents().length === 0) {
+      <div class="empty-state"><i class="pi pi-search"></i><h3>No encontramos experiencias con esos filtros</h3><p>Prueba con otro destino o selecciona otra categoría.</p><button class="outline-button" type="button" (click)="searchCleared.emit()">Limpiar filtros</button></div>
+    } @else {
+      @for (event of filteredEvents(); track event._id; let index = $index) {
+        <app-event-card
+          [event]="event"
+          [index]="index"
+          [adminView]="adminView()"
+          (enrollRequested)="enrollRequested.emit($event)"
+          (statusChanged)="statusChanged.emit($event)"
+          (editRequested)="editRequested.emit($event)"
+          (deleteRequested)="deleteRequested.emit($event)"
+        />
+      }
+    }
+  </div>
+</section>
+
+<section class="how-section" id="como-funciona">
+  <div class="how-intro"><p class="eyebrow">UNA COMUNIDAD, MUCHAS FORMAS DE CONOCERSE</p><h2>El viaje empieza<br /><span>en buena compañía.</span></h2><p>Organizamos cada experiencia para que solo tengas que elegir destino, reservar y venir con ganas de disfrutar.</p></div>
+  <div class="steps">
+    <article><span class="step-number">01</span><i class="pi pi-compass"></i><h3>Elige tu experiencia</h3><p>Desde una tarde diferente hasta un viaje de varios días.</p></article>
+    <article><span class="step-number">02</span><i class="pi pi-ticket"></i><h3>Reserva tu plaza</h3><p>Consulta fechas, destino, precio y plazas disponibles.</p></article>
+    <article><span class="step-number">03</span><i class="pi pi-heart"></i><h3>Comparte el camino</h3><p>Ven con ganas de descubrir lugares y conocer gente nueva.</p></article>
+  </div>
+</section>
+
+<section class="cta-section">
+  <div><p class="eyebrow">TU PRÓXIMA HISTORIA TE ESTÁ ESPERANDO</p><h2>Haz sitio para<br />algo distinto.</h2><p>{{ activeSection() === 'events' ? 'Descubre eventos de la comunidad o crea un grupo para organizar el tuyo.' : 'Descubre viajes en grupo y excursiones organizados por SinglesPlans.' }}</p></div>
+  <p-button [label]="activeSection() === 'events' ? 'Crear grupo' : 'Ver viajes'" icon="pi pi-arrow-up-right" (onClick)="activeSection() === 'events' ? createGroupRequested.emit() : plansRequested.emit()" />
+  <span class="cta-decoration"><i class="pi pi-sparkles"></i></span>
+</section>

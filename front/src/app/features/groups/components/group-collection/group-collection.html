@@ -1,0 +1,32 @@
+<section class="community-groups">
+  <div class="section-heading">
+    <div>
+      <p class="eyebrow">CREA TU PROPIA COMUNIDAD</p>
+      <h2>Mis grupos</h2>
+      <p>Descubre eventos creados por otros usuarios o inicia sesión para crear tu propio grupo y proponer eventos.</p>
+    </div>
+    <p-button label="Crear grupo" icon="pi pi-users" (onClick)="createRequested.emit()" />
+  </div>
+  @if (authenticated() && groups().length > 0) {
+    <div class="community-group-grid">
+      @for (group of groups(); track group._id) {
+        <article class="community-group-card">
+          <button class="group-card-main" type="button" (click)="groupSelected.emit(group)" [attr.aria-label]="'Ver detalles del grupo ' + group.name">
+            @if (group.imageUrl) {
+              <img class="group-card-image" [src]="group.imageUrl" [alt]="'Imagen del grupo ' + group.name" />
+            } @else {
+              <span class="group-card-image group-image-placeholder"><i class="pi pi-users"></i></span>
+            }
+            <h3>{{ group.name }}</h3>
+            <span class="group-card-location"><i class="pi pi-map-marker"></i>{{ group.city || 'Comunidad online' }}</span>
+          </button>
+          <p-button label="Crear evento" icon="pi pi-plus" size="small" (onClick)="eventRequested.emit(group)" />
+        </article>
+      }
+    </div>
+  } @else if (authenticated()) {
+    <div class="community-group-empty"><i class="pi pi-users"></i><span>Aún no has creado ningún grupo.</span><button type="button" (click)="createRequested.emit()">Crea uno para organizar tu primer evento.</button></div>
+  } @else {
+    <div class="community-group-empty"><i class="pi pi-lock"></i><span>¿Quieres crear un grupo o apuntarte a un evento?</span><button type="button" (click)="loginRequested.emit()">Regístrate o inicia sesión.</button></div>
+  }
+</section>
