@@ -37,6 +37,7 @@
     [canCreateAnyEvent]="canCreateAnyEvent()"
     [loading]="loading()"
     [error]="error()"
+    [joinNotice]="groupJoinNotice()"
     (createRequested)="createGroupRequested.emit()"
     (loginRequested)="loginRequested.emit()"
     (groupSelected)="groupSelected.emit($event)"
@@ -48,44 +49,85 @@
 <section class="plans-section" id="planes">
   <div class="section-heading">
     @if (activeSection() === 'events') {
-      <div><p class="eyebrow">EVENTOS DE LA COMUNIDAD</p><h2>Eventos</h2><p>Eventos publicados por otros usuarios. Inicia sesión para apuntarte o crea un grupo y organiza el tuyo.</p></div>
+      <div><p class="eyebrow">EVENTOS DE LA COMUNIDAD</p><h2>Eventos</h2><p>Descubre eventos de tus grupos y experiencias de la comunidad, o crea un grupo para organizar el tuyo.</p></div>
     } @else {
       <div><p class="eyebrow">ORGANIZADOS POR SINGLESPLANS</p><h2>Viajes</h2><p>Viajes y excursiones organizados por SinglesPlans. Para reservar plaza, inicia sesión.</p></div>
     }
   </div>
-  @if (activeSection() === 'events' && isSuperusuario()) {
-    <div class="event-view-tabs" role="tablist" aria-label="Vistas de eventos">
-      <button type="button" role="tab" [attr.aria-selected]="eventListView() === 'mine'" [class.active]="eventListView() === 'mine'" (click)="eventListViewSelected.emit('mine')">
-        Mis eventos publicados <span>{{ myEventsCount() }}</span>
-      </button>
-      <button type="button" role="tab" [attr.aria-selected]="eventListView() === 'all'" [class.active]="eventListView() === 'all'" (click)="eventListViewSelected.emit('all')">
-        Todos los eventos
-      </button>
+  @if (activeSection() === 'events' && !adminView()) {
+    <div class="event-list-navigation">
+      @if (isSuperusuario() && myEventsCount() > 0) {
+        <div class="event-view-tabs" role="tablist" aria-label="Mis eventos">
+          <button
+            type="button"
+            role="tab"
+            [attr.aria-selected]="eventListView() === 'published'"
+            [class.active]="eventListView() === 'published'"
+            (click)="eventListViewSelected.emit('published')"
+          >
+            Mis eventos publicados <span>{{ myEventsCount() }}</span>
+          </button>
+          @if (myJoinedEventsCount() > 0) {
+            <button
+              type="button"
+              role="tab"
+              [attr.aria-selected]="eventListView() === 'joined'"
+              [class.active]="eventListView() === 'joined'"
+              (click)="eventListViewSelected.emit('joined')"
+            >
+              Mis eventos <span>{{ myJoinedEventsCount() }}</span>
+            </button>
+          }
+        </div>
+      }
+      <a class="all-events-link" routerLink="/eventos/todos">
+        Todos los eventos <i class="pi pi-arrow-right"></i>
+      </a>
     </div>
   }
   <div class="discovery-toolbar">
-    <span class="result-context">{{ filteredEvents().length }} {{ activeSection() === 'events' ? 'eventos publicados' : 'viajes disponibles' }}</span>
+    <span class="result-context">{{ filteredEvents().length }} {{ activeSection() === 'events' ? 'eventos en esta vista' : 'viajes disponibles' }}</span>
     <label class="search-box"><i class="pi pi-search"></i><input type="search" [placeholder]="activeSection() === 'events' ? 'Buscar eventos o lugares' : 'Buscar viajes o destinos'" [value]="searchTerm()" (input)="searchChanged.emit($event)" /></label>
   </div>
   @if (error()) { <div class="alert error"><i class="pi pi-exclamation-circle"></i>{{ error() }}</div> }
   @if (notice()) { <div class="alert success"><i class="pi pi-check-circle"></i>{{ notice() }}</div> }
-  <div class="plan-grid">
-    @if (loading()) {
-      <div class="empty-state"><i class="pi pi-spin pi-spinner"></i><p>{{ activeSection() === 'events' ? 'Buscando eventos...' : 'Buscando viajes...' }}</p></div>
-    } @else if (events().length === 0) {
-      <div class="empty-state"><i class="pi" [class.pi-calendar]="activeSection() === 'events'" [class.pi-send]="activeSection() === 'trips'"></i><h3>{{ activeSection() === 'events' ? 'Todavía no hay eventos publicados' : 'Estamos preparando nuevos viajes' }}</h3><p>{{ activeSection() === 'events' ? 'Vuelve pronto para ver los eventos publicados por la comunidad.' : 'Vuelve pronto para descubrir los próximos viajes y excursiones.' }}</p></div>
-    } @else if (filteredEvents().length === 0) {
-      <div class="empty-state"><i class="pi pi-search"></i><h3>No encontramos experiencias con esos filtros</h3><p>Prueba con otro destino o selecciona otra categoría.</p><button class="outline-button" type="button" (click)="searchCleared.emit()">Limpiar filtros</button></div>
-    } @else {
+  @if (loading()) {
+    <div class="plan-grid"><div class="empty-state"><i class="pi pi-spin pi-spinner"></i><p>{{ activeSection() === 'events' ? 'Buscando eventos...' : 'Buscando viajes...' }}</p></div></div>
+  } @else if (events().length === 0) {
+    <div class="plan-grid"><div class="empty-state"><i class="pi" [class.pi-calendar]="activeSection() === 'events'" [class.pi-send]="activeSection() === 'trips'"></i><h3>{{ activeSection() === 'events' ? 'No hay eventos en esta vista' : 'Estamos preparando nuevos viajes' }}</h3><p>{{ activeSection() === 'events' ? 'Únete a un grupo para descubrir sus eventos o consulta todos los eventos.' : 'Vuelve pronto para descubrir los próximos viajes y excursiones.' }}</p></div></div>
+  } @else if (filteredEvents().length === 0) {
+    <div class="plan-grid"><div class="empty-state"><i class="pi pi-search"></i><h3>No encontramos experiencias con esos filtros</h3><p>Prueba con otro destino o selecciona otra categoría.</p><button class="outline-button" type="button" (click)="searchCleared.emit()">Limpiar filtros</button></div></div>
+  } @else if (activeSection() === 'events' && !adminView()) {
+    @for (day of groupedEvents(); track day.key) {
+      <section class="event-day-group">
+        <h3>{{ day.date | date: "EEEE d 'de' MMM" : '' : 'es-ES' }}</h3>
+        <div class="plan-grid">
+          @for (event of day.events; track event._id) {
+            <app-event-card
+              [event]="event"
+              [isOwner]="isSuperusuario() && ownsEvent(event)"
+              [unenrolling]="unenrollingEventId() === event._id"
+              [unenrollDisabled]="unenrollingEventId() !== null"
+              (unenrollRequested)="unenrollRequested.emit($event)"
+            />
+          }
+        </div>
+      </section>
+    }
+  } @else {
+    <div class="plan-grid">
       @for (event of filteredEvents(); track event._id) {
         <app-event-card
           [event]="event"
           [adminView]="adminView()"
           [isOwner]="isSuperusuario() && ownsEvent(event)"
+          [unenrolling]="unenrollingEventId() === event._id"
+          [unenrollDisabled]="unenrollingEventId() !== null"
+          (unenrollRequested)="unenrollRequested.emit($event)"
         />
       }
-    }
-  </div>
+    </div>
+  }
 </section>
 
 <section class="how-section" id="como-funciona">

@@ -47,6 +47,14 @@ export class GroupsService {
     return this.http.post<GroupItem>('/api/groups', group);
   }
 
+  updateGroup(id: string, group: Partial<CreateGroupInput>): Observable<GroupItem> {
+    return this.http.patch<GroupItem>(`/api/groups/${id}`, group);
+  }
+
+  deleteGroup(id: string): Observable<void> {
+    return this.http.delete<void>(`/api/groups/${id}`);
+  }
+
   planSettings(): Observable<PlanSettings> {
     return this.http.get<PlanSettings>('/api/groups/plans');
   }

@@ -16,6 +16,7 @@ export class GroupCollection {
   readonly canCreateAnyEvent = input(false);
   readonly loading = input(false);
   readonly error = input('');
+  readonly joinNotice = input('');
   readonly displayMode = input<'carousel' | 'all'>('carousel');
   readonly activeTab = signal<'mine' | 'managed'>('managed');
   readonly selectedTab = computed<'mine' | 'managed'>(() =>

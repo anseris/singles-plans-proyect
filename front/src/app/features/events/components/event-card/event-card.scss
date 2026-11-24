@@ -1,10 +1,16 @@
 .event-card { height: 100%; }
+.event-card-open { display:block; width:100%; padding:0; border:0; background:transparent; color:inherit; cursor:pointer; font:inherit; text-align:left; }
+.event-card-open:focus-visible { outline:2px solid var(--sea); outline-offset:-2px; }
 .event-card .card-art { height: 118px; }
 .event-card .card-content { padding: 11px 12px 12px; }
 .event-card .card-content h3 { margin: 0; font-size: 13px; line-height: 1.35; }
 .event-card .event-card-group,.event-card .event-card-meeting { gap:6px; margin-top:8px; font-size:10px; }
 .event-card .event-card-footer { gap:7px; margin-top:11px; font-size:9px; }
 .event-card .event-card-status { margin-top:9px; font-size:10px; }
+.event-card .event-card-attendance { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:7px; margin-top:10px; }
+.event-card-attendance>span { display:inline-flex; align-items:center; gap:5px; padding:5px 8px; border-radius:999px; background:#e7f3eb; color:#28645a; font-size:10px; font-weight:800; }
+.event-card-attendance button { display:inline-flex; align-items:center; gap:5px; padding:5px 0; border:0; background:transparent; color:#8d3939; cursor:pointer; font:700 10px Manrope,sans-serif; }
+.event-card-attendance button:disabled { cursor:wait; opacity:.65; }
 .card-photo { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
 .event-group { display: flex; align-items: center; gap: 6px; margin-top: 12px; color: var(--sea); font-size: 10px; font-weight: 700; }
 .event-image-placeholder { position: absolute; inset: 0; display: grid; place-items: center; background: linear-gradient(135deg, #77aca2, #031926); color: #f4e9cd; font: 800 88px Manrope,sans-serif; }
@@ -16,8 +22,6 @@
 .event-meeting-point > i:last-child { margin-left: auto; font-size: 10px; }
 .event-detail-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
 .event-detail-tag,.event-interest-tag { display: inline-flex; align-items: center; gap: 4px; padding: 5px 8px; border-radius: 999px; background: #edf4f1; color: var(--sea); font-size: 9px; font-weight: 700; }
-.plan-card[role='link'] { cursor: pointer; }
-.plan-card[role='link']:focus-visible { outline: 2px solid var(--sea); outline-offset: 3px; }
 .event-card-group,.event-card-meeting { display:flex; align-items:center; gap:8px; margin:9px 0 0; color:var(--muted); font-size:12px; }
 .event-card-group { color:var(--ink); font-weight:700; }
 .event-card-group i,.event-card-meeting i,.event-card-footer i { color:var(--sea); }

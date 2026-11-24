@@ -1,7 +1,9 @@
-import { Component, inject, signal } from '@angular/core';
+import { HttpErrorResponse } from '@angular/common/http';
+import { Component, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { ButtonModule } from 'primeng/button';
+import { DialogModule } from 'primeng/dialog';
 import type { GroupDetails, GroupItem } from '../../models/group.model';
 import { SinglesPlansFacade } from '../../../../core/application/singles-plans.facade';
 import { GroupsService } from '../../data-access/groups.service';
@@ -9,13 +11,23 @@ import { EventCard } from '../../../events/components/event-card/event-card';
 
 @Component({
   selector: 'app-group-detail',
-  imports: [ButtonModule, RouterLink, EventCard],
+  imports: [ButtonModule, DialogModule, RouterLink, EventCard],
   templateUrl: './group-detail.html',
   styleUrl: './group-detail.scss'
 })
 export class GroupDetail {
   readonly group = signal<GroupItem | null>(null);
   readonly canCreateEvent = signal(false);
+  readonly canManageGroup = computed(() => {
+    const details = this.details();
+    return !!details && (
+      this.vm.isAdmin || this.vm.user()?.id === details.createdById
+    );
+  });
+  readonly deleteDialogOpen = signal(false);
+  readonly deleteLoading = signal(false);
+  readonly deleteError = signal('');
+  readonly activeTab = signal<'about' | 'events' | 'members'>('about');
   readonly eventsTab = signal<'upcoming' | 'past'>('upcoming');
   readonly details = signal<GroupDetails | null>(null);
   readonly loading = signal(true);
@@ -50,6 +62,31 @@ export class GroupDetail {
 
   createEvent(group: GroupItem): void {
     void this.router.navigate(['/eventos/crear'], { queryParams: { grupo: group._id } });
+  }
+
+  editGroup(group: GroupItem): void {
+    void this.router.navigate(['/grupos/crear'], { queryParams: { editar: group._id } });
+  }
+
+  async deleteGroup(): Promise<void> {
+    const group = this.group();
+    if (!group || !this.canManageGroup()) return;
+    this.deleteLoading.set(true);
+    this.deleteError.set('');
+    try {
+      await firstValueFrom(this.groupsApi.deleteGroup(group._id));
+      this.deleteDialogOpen.set(false);
+      await this.vm.loadEvents();
+      void this.router.navigate(['/eventos']);
+    } catch (error) {
+      this.deleteError.set(
+        error instanceof HttpErrorResponse && typeof error.error?.message === 'string'
+          ? error.error.message
+          : 'No se pudo eliminar el grupo. Inténtalo de nuevo.',
+      );
+    } finally {
+      this.deleteLoading.set(false);
+    }
   }
 
 }

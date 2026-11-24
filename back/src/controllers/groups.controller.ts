@@ -45,7 +45,8 @@ export async function getGroupDetails(req: Request, res: Response, next: NextFun
     }
 
     const now = new Date();
-    const [upcomingEvents, pastEvents, members, memberCount] = await Promise.all([
+    const [organizer, upcomingEvents, pastEvents, members, memberCount] = await Promise.all([
+      User.findById(group.createdBy).select('name').lean(),
       Event.find({ group: group._id, status: 'published', endsAt: { $gte: now } })
         .populate('group', 'name city')
         .sort({ startsAt: 1 })
@@ -64,6 +65,7 @@ export async function getGroupDetails(req: Request, res: Response, next: NextFun
     res.json({
       group,
       createdById: String(group.createdBy),
+      createdByName: organizer?.name ?? '',
       upcomingEvents,
       pastEvents,
       members: members.flatMap((membership) => {
@@ -89,14 +91,7 @@ export async function listMine(req: AuthenticatedRequest, res: Response, next: N
 export async function listInterests(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
   try {
     const userId = req.auth?.userId;
-    const [memberships, enrollments] = await Promise.all([
-      GroupMembership.find({ user: userId }).distinct('group'),
-      Enrollment.find({ user: userId }).distinct('event')
-    ]);
-    const enrolledGroups = enrollments.length
-      ? await Event.find({ _id: { $in: enrollments }, type: 'event' }).distinct('group')
-      : [];
-    const groupIds = [...new Set([...memberships, ...enrolledGroups].map(String))];
+    const groupIds = await GroupMembership.find({ user: userId }).distinct('group');
     const groups = await Group.find({ _id: { $in: groupIds } }).sort({ createdAt: -1 }).lean();
     res.json(groups);
   } catch (error) {
@@ -182,6 +177,104 @@ export async function createGroup(req: AuthenticatedRequest, res: Response, next
       res.status(409).json({ message: 'Ya existe un grupo con ese nombre.' });
       return;
     }
+    next(error);
+  }
+}
+
+export async function updateGroup(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const id = req.params['id'];
+    if (!mongoose.isValidObjectId(id)) {
+      res.status(404).json({ message: 'No se encontró el grupo.' });
+      return;
+    }
+
+    const group = await Group.findById(id);
+    if (!group) {
+      res.status(404).json({ message: 'No se encontró el grupo.' });
+      return;
+    }
+    if (String(group.createdBy) !== req.auth?.userId && req.auth?.role !== 'admin') {
+      res.status(403).json({ message: 'Solo quien creó el grupo puede editarlo.' });
+      return;
+    }
+
+    const name = typeof req.body['name'] === 'string' ? req.body['name'].trim() : '';
+    const description = typeof req.body['description'] === 'string' ? req.body['description'].trim() : '';
+    const city = typeof req.body['city'] === 'string' ? req.body['city'].trim() : '';
+    const imageUrl = typeof req.body['imageUrl'] === 'string' ? req.body['imageUrl'] : '';
+    const interests = req.body['interests'] ?? [];
+    const validInterests = Array.isArray(interests) &&
+      interests.every((interest: unknown) => typeof interest === 'string' && interest.trim().length > 0 && interest.length <= 40);
+    const uniqueInterests = validInterests ? [...new Set(interests as string[])] : [];
+    const validImage =
+      imageUrl === '' ||
+      (/^data:image\/(?:jpeg|png|webp);base64,[A-Za-z0-9+/]+={0,2}$/.test(imageUrl) &&
+        Math.floor((imageUrl.length - imageUrl.indexOf(',') - 1) * 3 / 4) <= 2 * 1024 * 1024);
+    const hasAgeRange = 'ageRange' in req.body;
+    const ageRange = req.body['ageRange'];
+    const validAgeRange = !hasAgeRange || ageRange === null || (
+      typeof ageRange === 'object' &&
+      ageRange !== null &&
+      'min' in ageRange &&
+      'max' in ageRange &&
+      Number.isInteger(ageRange.min) &&
+      Number.isInteger(ageRange.max) &&
+      Number(ageRange.min) >= 18 &&
+      Number(ageRange.max) <= 100 &&
+      Number(ageRange.min) <= Number(ageRange.max)
+    );
+    if (!name || !description || name.length > 100 || description.length > 1500 || city.length > 120 || !validInterests || !validImage || !validAgeRange) {
+      res.status(400).json({ message: 'Revisa el nombre, la descripción, los intereses seleccionados y que la imagen sea válida (máximo 2 MB).' });
+      return;
+    }
+
+    group.name = name;
+    group.description = description;
+    group.city = city;
+    group.imageUrl = imageUrl;
+    group.interests = uniqueInterests;
+    group.plan = req.body['plan'] === 'pro' ? 'pro' : 'standard';
+    if (hasAgeRange) group.set('ageRange', ageRange ?? undefined);
+    await group.save();
+    res.json(group);
+  } catch (error) {
+    if (typeof error === 'object' && error !== null && 'code' in error && error.code === 11000) {
+      res.status(409).json({ message: 'Ya existe un grupo con ese nombre.' });
+      return;
+    }
+    next(error);
+  }
+}
+
+export async function deleteGroup(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const id = req.params['id'];
+    if (!mongoose.isValidObjectId(id)) {
+      res.status(404).json({ message: 'No se encontró el grupo.' });
+      return;
+    }
+
+    const group = await Group.findById(id).select('createdBy');
+    if (!group) {
+      res.status(404).json({ message: 'No se encontró el grupo.' });
+      return;
+    }
+    if (String(group.createdBy) !== req.auth?.userId && req.auth?.role !== 'admin') {
+      res.status(403).json({ message: 'Solo quien creó el grupo puede eliminarlo.' });
+      return;
+    }
+    if (await Event.exists({ group: group._id })) {
+      res.status(409).json({ message: 'No se puede eliminar el grupo mientras tenga eventos. Elimina primero sus eventos asociados.' });
+      return;
+    }
+
+    await Promise.all([
+      Group.deleteOne({ _id: group._id }),
+      GroupMembership.deleteMany({ group: group._id })
+    ]);
+    res.status(204).end();
+  } catch (error) {
     next(error);
   }
 }

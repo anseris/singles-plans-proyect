@@ -1,0 +1,29 @@
+<section class="event-attendees-page">
+  <a class="attendees-back" [routerLink]="['/eventos/detalles', eventId()]">
+    <i class="pi pi-arrow-left"></i> Volver al evento
+  </a>
+  <header class="attendees-heading">
+    <p class="eyebrow">COMUNIDAD DEL EVENTO</p>
+    <h1>Personas asistentes</h1>
+    @if (eventTitle()) { <p>{{ eventTitle() }}</p> }
+  </header>
+
+  @if (loading()) {
+    <div class="attendees-state"><i class="pi pi-spin pi-spinner"></i><span>Cargando asistentes...</span></div>
+  } @else if (error()) {
+    <div class="attendees-state error"><i class="pi pi-exclamation-circle"></i><span>{{ error() }}</span></div>
+  } @else if (attendees().length) {
+    <div class="attendees-summary">{{ attendees().length }} {{ attendees().length === 1 ? 'persona asistirá' : 'personas asistirán' }}</div>
+    <ul class="attendee-list">
+      @for (attendee of attendees(); track attendee.id) {
+        <li>
+          <span class="attendee-avatar" aria-hidden="true">{{ attendeeInitial(attendee.name) }}</span>
+          <span class="attendee-name">{{ attendee.name || 'Usuario de SinglesPlans' }}</span>
+          <i class="pi pi-check-circle" aria-label="Asistencia confirmada"></i>
+        </li>
+      }
+    </ul>
+  } @else {
+    <div class="attendees-state"><i class="pi pi-users"></i><span>Aún no hay personas apuntadas a este evento.</span></div>
+  }
+</section>

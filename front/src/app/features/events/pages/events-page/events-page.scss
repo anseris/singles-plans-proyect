@@ -12,3 +12,13 @@
 .event-view-tabs button { display:flex; align-items:center; gap:8px; padding:12px 15px; border:0; border-bottom:2px solid transparent; background:transparent; color:var(--muted); cursor:pointer; font:700 12px Manrope,sans-serif; }
 .event-view-tabs button.active { border-bottom-color:var(--sea); color:var(--sea); }
 .event-view-tabs button span { display:grid; min-width:21px; height:21px; place-items:center; padding:0 6px; border-radius:999px; background:#e7f0ec; color:var(--sea); font-size:10px; }
+.event-list-navigation { display:flex; align-items:center; justify-content:space-between; gap:16px; margin:4px 0 22px; }
+.event-view-tabs { margin:0; }
+.all-events-link { display:inline-flex; align-items:center; gap:8px; margin-left:auto; color:var(--sea); font-size:12px; font-weight:800; text-decoration:none; white-space:nowrap; }
+.event-day-group { margin:0 0 28px; }
+.event-day-group h3 { margin:0 0 14px; color:var(--ink); font:800 18px Manrope,sans-serif; text-transform:capitalize; }
+@media(max-width:620px) {
+  .event-list-navigation { align-items:flex-start; flex-direction:column; }
+  .all-events-link { margin:0 0 0 auto; }
+  .event-view-tabs { width:100%; overflow-x:auto; }
+}

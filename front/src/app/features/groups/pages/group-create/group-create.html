@@ -1,9 +1,9 @@
 <section class="wizard-page">
   <div class="wizard-heading">
     <button type="button" class="wizard-back" (click)="cancel()"><i class="pi pi-arrow-left"></i> Volver</button>
-    <p class="eyebrow">NUEVO GRUPO</p>
-    <h1>Crea tu comunidad</h1>
-    <p>Completa el perfil de tu grupo paso a paso.</p>
+    <p class="eyebrow">{{ editingId() ? 'EDITAR GRUPO' : 'NUEVO GRUPO' }}</p>
+    <h1>{{ editingId() ? 'Actualiza tu comunidad' : 'Crea tu comunidad' }}</h1>
+    <p>{{ editingId() ? 'Actualiza el perfil de tu grupo.' : 'Completa el perfil de tu grupo paso a paso.' }}</p>
   </div>
 
   <div class="wizard-layout">
@@ -16,6 +16,7 @@
     </ol>
 
     <form class="wizard-card" (ngSubmit)="vm.groupStep() === 7 ? submit() : vm.nextGroupStep()">
+      @if (loadingEdit()) { <div class="alert">Cargando los datos del grupo...</div> }
       @if (vm.error()) { <div class="alert error">{{ vm.error() }}</div> }
       @if (vm.groupStep() === 1) {
         <label>Nombre del grupo<input pInputText name="name" [(ngModel)]="vm.newGroup.name" maxlength="100" required placeholder="Ej. Escapadas por España" /></label>
@@ -110,7 +111,7 @@
         @if (vm.groupStep() > 1 && !createdGroup()) { <button type="button" class="wizard-text" (click)="vm.previousGroupStep()"><i class="pi pi-arrow-left"></i> Atrás</button> }
         @if (vm.groupStep() > 1 && vm.groupStep() < 5) { <button type="button" class="wizard-text" (click)="vm.skipGroupStep()">Omitir</button> }
         @if (vm.groupStep() < 7) { <p-button label="Continuar" icon="pi pi-arrow-right" iconPos="right" type="submit" /> }
-        @else if (!createdGroup()) { <p-button label="Crear grupo" icon="pi pi-check" type="submit" /> }
+        @else if (!createdGroup()) { <p-button [label]="editingId() ? 'Guardar cambios' : 'Crear grupo'" [icon]="editingId() ? 'pi pi-save' : 'pi pi-check'" type="submit" /> }
       </div>
     </form>
   </div>

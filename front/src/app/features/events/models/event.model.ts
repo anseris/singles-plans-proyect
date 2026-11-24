@@ -31,12 +31,18 @@ export interface EventItem {
   group?: GroupItem | null;
   status: EventStatus;
   enrolledCount?: number;
+  isEnrolled?: boolean;
   createdBy?: { _id?: string; id?: string; name: string; email?: string };
 }
 
 export interface EventDetails extends EventItem {
   isCreator: boolean;
   isEnrolled: boolean;
+}
+
+export interface EventAttendee {
+  id: string;
+  name: string;
 }
 
 export interface EventCreateInput {

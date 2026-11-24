@@ -1,11 +1,14 @@
 import { Component, inject, signal } from '@angular/core';
+import { HttpErrorResponse } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
 import { DialogModule } from 'primeng/dialog';
+import { firstValueFrom } from 'rxjs';
 import { GooglePlaceAutocompleteDirective } from '../../directives/google-place-autocomplete.directive';
 import { SinglesPlansFacade } from '../../../../core/application/singles-plans.facade';
+import { EventsService } from '../../data-access/events.service';
 
 @Component({
   selector: 'app-event-create',
@@ -23,11 +26,19 @@ export class EventCreatePage {
   readonly vm = inject(SinglesPlansFacade);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
+  private readonly eventsApi = inject(EventsService);
   readonly eventConfirmationOpen = signal(false);
+  readonly loadingEdit = signal(false);
   readonly confirmationMessage = signal('');
   eventInterestDraft = '';
 
   ngOnInit(): void {
+    const editingId = this.route.snapshot.queryParamMap.get('editar');
+    if (editingId) {
+      if (this.vm.editingId() === editingId) return;
+      void this.loadEventForEdit(editingId);
+      return;
+    }
     const groupId = this.route.snapshot.queryParamMap.get('grupo');
     if (groupId) {
       this.vm.createEventForGroupId(groupId);
@@ -37,11 +48,14 @@ export class EventCreatePage {
   }
 
   async submit(): Promise<void> {
-    const editing = !!this.vm.editingId();
+    if (this.loadingEdit()) return;
+    const editingId = this.vm.editingId();
     const event = await this.vm.submitEvent();
     if (!event) return;
-    if (editing) {
-      void this.router.navigate([this.vm.isAdmin ? '/administracion' : '/eventos']);
+    if (editingId) {
+      void this.router.navigate(
+        this.vm.isAdmin ? ['/administracion'] : ['/eventos/detalles', editingId],
+      );
       return;
     }
     this.confirmationMessage.set(
@@ -63,6 +77,29 @@ export class EventCreatePage {
   }
 
   cancel(): void {
-    void this.router.navigate(['/eventos']);
+    const editingId = this.vm.editingId();
+    void this.router.navigate(editingId ? ['/eventos/detalles', editingId] : ['/eventos']);
+  }
+
+  private async loadEventForEdit(id: string): Promise<void> {
+    this.loadingEdit.set(true);
+    this.vm.error.set('');
+    try {
+      const event = await firstValueFrom(this.eventsApi.eventDetails(id));
+      if (!event.isCreator && !this.vm.isAdmin) {
+        void this.router.navigate(['/eventos/detalles', id]);
+        return;
+      }
+      this.vm.prepareEventEdit(event);
+    } catch (error) {
+      this.vm.error.set(
+        error instanceof HttpErrorResponse && typeof error.error?.message === 'string'
+          ? error.error.message
+          : 'No se pudo cargar el evento para editarlo.',
+      );
+      void this.router.navigate(['/eventos']);
+    } finally {
+      this.loadingEdit.set(false);
+    }
   }
 }

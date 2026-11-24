@@ -56,7 +56,7 @@ describe('App', () => {
           interestGroups: () => of([]),
           joinGroup: (id: string) => {
             joinedGroupId = id;
-            return of({ message: 'Te has unido al grupo.' });
+            return of({ message: 'Ya formas parte de «Grupo público».' });
           },
           adminGroups: () => of([]),
           createGroup: () => of({}),
@@ -401,7 +401,9 @@ describe('App', () => {
     const detail = fixture.nativeElement.querySelector('.group-detail-card') as HTMLElement;
     expect(detail.textContent).toContain('Senderismo');
     expect(detail.textContent).toContain('Madrid');
-    expect(detail.textContent).toContain('Rutas para descubrir la sierra.');
+    expect(fixture.nativeElement.querySelector('#group-about-panel')?.textContent).toContain(
+      'Rutas para descubrir la sierra.'
+    );
     expect(detail.querySelector('.group-detail-image')?.getAttribute('src')).toBe('data:image/png;base64,aGVsbG8=');
     expect(detail.textContent).toContain('Crear evento');
   });
@@ -531,6 +533,8 @@ describe('App', () => {
 
     expect(joinedGroupId).toBe('group-2');
     expect(app.interestGroups()).toEqual([group]);
-    expect(app.notice()).toBe('Te has unido al grupo.');
+    expect(app.groupJoinNotice()).toBe('Te has unido al grupo «Grupo público».');
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.community-groups [role="status"]')?.textContent).toContain('Grupo público');
   });
 });

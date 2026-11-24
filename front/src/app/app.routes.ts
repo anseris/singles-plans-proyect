@@ -1,6 +1,8 @@
 import { Routes } from '@angular/router';
 import { EventsList } from './features/events/pages/events-list/events-list';
 import { EventDetailPage } from './features/events/pages/event-detail/event-detail';
+import { EventAttendeesPage } from './features/events/pages/event-attendees/event-attendees';
+import { AllEventsPage } from './features/events/pages/all-events/all-events';
 import { EventCreatePage } from './features/events/pages/event-create/event-create';
 import { GroupCreatePage } from './features/groups/pages/group-create/group-create';
 import { GroupDetail } from './features/groups/pages/group-detail/group-detail';
@@ -11,6 +13,8 @@ export const routes: Routes = [
   { path: '', pathMatch: 'full', redirectTo: 'eventos' },
   { path: 'eventos', component: EventsList, data: { section: 'events' } },
   { path: 'viajes', component: EventsList, data: { section: 'trips' } },
+  { path: 'eventos/todos', component: AllEventsPage },
+  { path: 'eventos/detalles/:id/asistentes', component: EventAttendeesPage },
   { path: 'eventos/detalles/:id', component: EventDetailPage },
   { path: 'eventos/crear', component: EventCreatePage },
   { path: 'grupos/crear', component: GroupCreatePage },

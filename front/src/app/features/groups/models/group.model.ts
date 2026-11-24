@@ -36,6 +36,7 @@ export interface GroupMember {
 export interface GroupDetails {
   group: GroupItem;
   createdById: string;
+  createdByName: string;
   upcomingEvents: EventItem[];
   pastEvents: EventItem[];
   members: GroupMember[];

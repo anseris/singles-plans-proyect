@@ -1,0 +1,50 @@
+<section class="all-events-page">
+  <a class="all-events-back" routerLink="/eventos">
+    <i class="pi pi-arrow-left"></i>
+    Volver a eventos
+  </a>
+  <header class="all-events-heading">
+    <p class="eyebrow">EVENTOS DE LA COMUNIDAD</p>
+    <h1>Todos los eventos</h1>
+    <p>Explora los próximos eventos publicados, ordenados por fecha.</p>
+  </header>
+
+  @if (actionError()) {
+    <div class="alert error">{{ actionError() }}</div>
+  }
+  @if (actionNotice()) {
+    <div class="alert success" role="status">{{ actionNotice() }}</div>
+  }
+  @if (loading()) {
+    <div class="all-events-state">
+      <i class="pi pi-spin pi-spinner"></i>
+      <span>Cargando eventos...</span>
+    </div>
+  } @else if (error()) {
+    <div class="all-events-state error">
+      <i class="pi pi-exclamation-circle"></i>
+      <span>{{ error() }}</span>
+    </div>
+  } @else if (groupedEvents().length) {
+    @for (day of groupedEvents(); track day.key) {
+      <section class="all-events-day">
+        <h2>{{ day.date | date: "EEEE d 'de' MMM" : '' : 'es-ES' }}</h2>
+        <div class="all-events-grid">
+          @for (event of day.events; track event._id) {
+            <app-event-card
+              [event]="event"
+              [unenrolling]="vm.unenrollingEventId() === event._id"
+              [unenrollDisabled]="vm.unenrollingEventId() !== null"
+              (unenrollRequested)="unenroll($event)"
+            />
+          }
+        </div>
+      </section>
+    }
+  } @else {
+    <div class="all-events-state">
+      <i class="pi pi-calendar"></i>
+      <span>Todavía no hay eventos publicados.</span>
+    </div>
+  }
+</section>

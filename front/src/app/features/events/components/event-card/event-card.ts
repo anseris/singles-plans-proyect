@@ -1,4 +1,4 @@
-import { Component, inject, input } from '@angular/core';
+import { Component, inject, input, output } from '@angular/core';
 import { Router } from '@angular/router';
 import type { EventItem } from '../../models/event.model';
 
@@ -12,6 +12,9 @@ export class EventCard {
   readonly event = input.required<EventItem>();
   readonly adminView = input(false);
   readonly isOwner = input(false);
+  readonly unenrolling = input(false);
+  readonly unenrollDisabled = input(false);
+  readonly unenrollRequested = output<EventItem>();
 
   eventInitial(title: string): string {
     return title.trim().charAt(0).toLocaleUpperCase('es-ES') || '?';
@@ -27,8 +30,7 @@ export class EventCard {
     }).format(new Date(event.startsAt));
   }
 
-  openDetails(event: Event): void {
-    if (event.target instanceof Element && event.target.closest('a, button')) return;
+  openDetails(): void {
     void this.router.navigate(['/eventos/detalles', this.event()._id]);
   }
 }

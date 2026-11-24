@@ -17,6 +17,14 @@ import type {
   PlanSettings,
 } from '../../features/groups/models/group.model';
 
+function isUpcomingPublished(event: EventItem): boolean {
+  return event.status === 'published' && new Date(event.startsAt).getTime() >= Date.now();
+}
+
+function shouldShowOwnedEvent(event: EventItem): boolean {
+  return event.status === 'pending' || isUpcomingPublished(event);
+}
+
 @Injectable({ providedIn: 'root' })
 export class SinglesPlansFacade {
   private readonly router = inject(Router);
@@ -26,14 +34,29 @@ export class SinglesPlansFacade {
 
   readonly events = signal<EventItem[]>([]);
   readonly myEvents = signal<EventItem[]>([]);
-  readonly eventListView = signal<'mine' | 'all'>('all');
-  readonly visibleEvents = computed(() =>
-    this.isSuperusuario && this.eventListView() === 'mine' ? this.myEvents() : this.events(),
-  );
+  readonly eventListView = signal<'published' | 'joined'>('published');
+  readonly visibleEvents = computed(() => {
+    if (this.activeSection() !== 'events' || (this.isAdmin && this.adminView())) {
+      return this.events();
+    }
+    if (this.isSuperusuario && this.myEventsForList().length > 0) {
+      return this.eventListView() === 'published'
+        ? this.myEventsForList()
+        : this.myEnrolledEvents();
+    }
+    const joinedGroupIds = new Set(this.interestGroups().map((group) => group._id));
+    return this.events().filter((event) =>
+      joinedGroupIds.has(event.group?._id ?? event.groupId ?? ''),
+    );
+  });
   readonly groups = signal<GroupItem[]>([]);
   readonly myGroups = signal<GroupItem[]>([]);
   readonly allGroups = signal<GroupItem[]>([]);
   readonly interestGroups = signal<GroupItem[]>([]);
+  readonly enrolledEvents = signal<EventItem[]>([]);
+  readonly myEventsForList = computed(() => this.myEvents().filter(shouldShowOwnedEvent));
+  readonly myEnrolledEvents = computed(() => this.enrolledEvents().filter(isUpcomingPublished));
+  readonly groupsNeedRefresh = signal(false);
   readonly availableGroupInterests = signal<InterestItem[]>([]);
   readonly planSettings = signal<PlanSettings>({
     standardPrice: 2,
@@ -44,6 +67,8 @@ export class SinglesPlansFacade {
   readonly loading = signal(true);
   readonly error = signal('');
   readonly notice = signal('');
+  readonly groupJoinNotice = signal('');
+  readonly unenrollingEventId = signal<string | null>(null);
   readonly dialogOpen = signal(false);
   readonly createOpen = signal(false);
   readonly groupOpen = signal(false);
@@ -108,7 +133,7 @@ export class SinglesPlansFacade {
     void this.auth
       .restoreSession()
       .then(() => {
-        if (this.isSuperusuario) this.eventListView.set('mine');
+        if (this.isSuperusuario) this.eventListView.set('published');
         void this.loadPlanSettings();
         void this.loadEvents();
       })
@@ -206,6 +231,7 @@ export class SinglesPlansFacade {
   async logout(): Promise<void> {
     this.auth.logout();
     this.adminView.set(false);
+    this.groupJoinNotice.set('');
     this.notice.set('Has cerrado sesión.');
     await this.loadEvents();
   }
@@ -232,18 +258,20 @@ export class SinglesPlansFacade {
         this.groups.set(
           this.isAdmin ? await firstValueFrom(this.groupsApi.adminGroups()) : myGroups,
         );
-        if (this.isSuperusuario) {
-          const myEvents = await firstValueFrom(this.eventsApi.myEvents());
-          this.myEvents.set(myEvents.created);
-        } else {
-          this.myEvents.set([]);
+        const myEvents = await firstValueFrom(this.eventsApi.myEvents());
+        this.myEvents.set(myEvents.created);
+        this.enrolledEvents.set(myEvents.enrolled);
+        if (this.eventListView() === 'joined' && this.myEnrolledEvents().length === 0) {
+          this.eventListView.set('published');
         }
       } else {
         this.myGroups.set([]);
         this.interestGroups.set([]);
         this.groups.set([]);
         this.myEvents.set([]);
+        this.enrolledEvents.set([]);
       }
+      this.groupsNeedRefresh.set(false);
     } catch (error) {
       this.error.set(this.errorMessage(error));
     } finally {
@@ -269,15 +297,40 @@ export class SinglesPlansFacade {
     }
   }
 
+  async unenroll(event: EventItem): Promise<boolean> {
+    if (!this.user()) {
+      this.openAuth('login');
+      return false;
+    }
+    if (!event.isEnrolled || this.unenrollingEventId()) return false;
+
+    this.unenrollingEventId.set(event._id);
+    this.error.set('');
+    this.notice.set('');
+    try {
+      const result = await firstValueFrom(this.eventsApi.unenroll(event._id));
+      this.notice.set(result.message);
+      await this.loadEvents();
+      return true;
+    } catch (error) {
+      this.error.set(this.errorMessage(error));
+      return false;
+    } finally {
+      this.unenrollingEventId.set(null);
+    }
+  }
+
   async joinGroup(group: GroupItem): Promise<void> {
     if (!this.user()) {
       this.openAuth('login');
       return;
     }
     this.error.set('');
+    this.notice.set('');
+    this.groupJoinNotice.set('');
     try {
-      const result = await firstValueFrom(this.groupsApi.joinGroup(group._id));
-      this.notice.set(result.message);
+      await firstValueFrom(this.groupsApi.joinGroup(group._id));
+      this.groupJoinNotice.set(`Te has unido al grupo «${group.name}».`);
       this.interestGroups.update((groups) =>
         groups.some((item) => item._id === group._id) ? groups : [...groups, group],
       );
@@ -315,7 +368,7 @@ export class SinglesPlansFacade {
     if (!this.newGroup.interests.includes(interestName)) this.toggleGroupInterest(interestName);
   }
 
-  setEventListView(view: 'mine' | 'all'): void {
+  setEventListView(view: 'published' | 'joined'): void {
     this.eventListView.set(view);
     this.searchTerm.set('');
   }
@@ -332,7 +385,9 @@ export class SinglesPlansFacade {
       const editingId = this.editingId();
       let savedEvent: EventItem;
       if (editingId) {
-        savedEvent = await firstValueFrom(this.eventsApi.update(editingId, this.newEvent));
+        savedEvent = await firstValueFrom(
+          this.eventsApi.update(editingId, this.newEvent, this.isAdmin),
+        );
         this.notice.set('Cambios guardados.');
       } else {
         savedEvent = await firstValueFrom(this.eventsApi.create(this.newEvent, this.isAdmin));
@@ -348,7 +403,7 @@ export class SinglesPlansFacade {
       this.newEventInterestOptions.set([]);
       this.eventStep.set(1);
       await this.loadEvents();
-      if (!editingId && this.isSuperusuario) this.eventListView.set('mine');
+      if (!editingId && this.isSuperusuario) this.eventListView.set('published');
       return savedEvent;
     } catch (error) {
       this.error.set(this.errorMessage(error));
@@ -471,8 +526,11 @@ export class SinglesPlansFacade {
         }),
       );
       this.auth.setSuperusuario(true);
-      this.eventListView.set('mine');
+      this.eventListView.set('published');
       this.groups.update((groups) => [...groups, group]);
+      this.myGroups.update((groups) => [...groups, group]);
+      this.allGroups.update((groups) => [...groups, group]);
+      this.groupsNeedRefresh.set(true);
       this.groupOpen.set(false);
       this.notice.set(`Grupo «${group.name}» creado. Añade ahora un evento para el grupo.`);
       this.editingId.set(null);
@@ -486,6 +544,11 @@ export class SinglesPlansFacade {
   }
 
   openEditEvent(event: EventItem): void {
+    this.prepareEventEdit(event);
+    void this.router.navigate(['/eventos/crear'], { queryParams: { editar: event._id } });
+  }
+
+  prepareEventEdit(event: EventItem): void {
     this.error.set('');
     this.editingId.set(event._id);
     this.newEvent = {
@@ -516,7 +579,6 @@ export class SinglesPlansFacade {
       ),
     );
     this.createOpen.set(true);
-    void this.router.navigate(['/eventos/crear'], { queryParams: { editar: event._id } });
   }
 
   createEventInGroup(group: GroupItem): void {

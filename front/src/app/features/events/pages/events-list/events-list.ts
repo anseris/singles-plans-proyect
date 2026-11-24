@@ -16,6 +16,7 @@ export class EventsList {
   ngOnInit(): void {
     const section = this.route.snapshot.data['section'] as 'events' | 'trips';
     if (this.vm.activeSection() !== section) this.vm.switchSection(section);
+    else if (this.vm.groupsNeedRefresh()) void this.vm.loadEvents();
   }
 
   openCreateGroup(): void {

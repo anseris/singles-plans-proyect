@@ -20,12 +20,22 @@ export async function listPublic(req: AuthenticatedRequest, res: Response, next:
       filter['type'] = type;
     }
     const events = await Event.find(filter).populate('group', 'name city').sort({ startsAt: 1 }).lean();
-    const counts = await Enrollment.aggregate([
-      { $match: { event: { $in: events.map((event) => event._id) } } },
-      { $group: { _id: '$event', count: { $sum: 1 } } }
+    const [counts, enrolledEventIds] = await Promise.all([
+      Enrollment.aggregate([
+        { $match: { event: { $in: events.map((event) => event._id) } } },
+        { $group: { _id: '$event', count: { $sum: 1 } } }
+      ]),
+      req.auth?.userId
+        ? Enrollment.find({ user: req.auth.userId, event: { $in: events.map((event) => event._id) } }).distinct('event')
+        : Promise.resolve([])
     ]);
     const countByEvent = new Map(counts.map((entry) => [String(entry['_id']), entry['count'] as number]));
-    res.json(events.map((event) => ({ ...event, enrolledCount: countByEvent.get(String(event['_id'])) ?? 0 })));
+    const enrolledEventSet = new Set(enrolledEventIds.map(String));
+    res.json(events.map((event) => ({
+      ...event,
+      enrolledCount: countByEvent.get(String(event['_id'])) ?? 0,
+      isEnrolled: enrolledEventSet.has(String(event['_id']))
+    })));
   } catch (error) {
     next(error);
   }
@@ -37,7 +47,11 @@ export async function listMine(req: AuthenticatedRequest, res: Response, next: N
       Event.find({ createdBy: req.auth?.userId }).populate('group', 'name city').sort({ createdAt: -1 }).lean(),
       Enrollment.find({ user: req.auth?.userId }).populate({ path: 'event', populate: { path: 'group', select: 'name city' } }).sort({ createdAt: -1 }).lean()
     ]);
-    res.json({ created, enrollments });
+    const enrolled = enrollments.flatMap((enrollment) => {
+      const event = enrollment.event as { _id?: unknown } | null;
+      return event ? [{ ...event, isEnrolled: true }] : [];
+    });
+    res.json({ created, enrolled });
   } catch (error) {
     next(error);
   }
@@ -51,7 +65,7 @@ export async function getEventDetails(req: AuthenticatedRequest, res: Response, 
       return;
     }
     const event = await Event.findById(id)
-      .populate('group', 'name city')
+      .populate('group', 'name city imageUrl')
       .populate('createdBy', 'name')
       .lean();
     if (!event) {
@@ -79,6 +93,39 @@ export async function getEventDetails(req: AuthenticatedRequest, res: Response, 
   }
 }
 
+export async function listEventAttendees(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const id = req.params['id'];
+    if (!mongoose.isValidObjectId(id)) {
+      res.status(404).json({ message: 'No se encontró el evento.' });
+      return;
+    }
+
+    const event = await Event.findById(id).select('_id status createdBy').lean();
+    if (!event) {
+      res.status(404).json({ message: 'No se encontró el evento.' });
+      return;
+    }
+    const isCreator = !!req.auth?.userId && String(event.createdBy) === req.auth.userId;
+    if (event.status !== 'published' && !isCreator && req.auth?.role !== 'admin') {
+      res.status(404).json({ message: 'No se encontró el evento.' });
+      return;
+    }
+
+    const enrollments = await Enrollment.find({ event: event._id })
+      .populate('user', 'name')
+      .sort({ createdAt: 1 })
+      .lean();
+    const attendees = enrollments.flatMap((enrollment) => {
+      const user = enrollment.user as { _id?: unknown; name?: string } | null;
+      return user ? [{ id: String(user._id), name: user.name ?? '' }] : [];
+    });
+    res.json(attendees);
+  } catch (error) {
+    next(error);
+  }
+}
+
 export async function createCommunityEvent(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
   try {
     const input = req.body as Record<string, unknown>;
@@ -99,6 +146,106 @@ export async function createCommunityEvent(req: AuthenticatedRequest, res: Respo
       createdBy: req.auth?.userId
     });
     res.status(201).json(event);
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function updateCommunityEvent(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const id = req.params['id'];
+    if (!mongoose.isValidObjectId(id)) {
+      res.status(404).json({ message: 'No se encontró el evento.' });
+      return;
+    }
+
+    const currentEvent = await Event.findById(id);
+    if (!currentEvent) {
+      res.status(404).json({ message: 'No se encontró el evento.' });
+      return;
+    }
+    if (String(currentEvent.createdBy) !== req.auth?.userId && req.auth?.role !== 'admin') {
+      res.status(403).json({ message: 'Solo quien creó el evento puede editarlo.' });
+      return;
+    }
+
+    const input = req.body as Record<string, unknown>;
+    if (!isValidEventInput(input, ['event']) || !areValidInterests(input)) {
+      res.status(400).json({ message: 'Revisa los datos del evento antes de guardar los cambios.' });
+      return;
+    }
+    const group = await Group.findOne({ _id: input['groupId'], createdBy: req.auth?.userId });
+    if (!group && req.auth?.role !== 'admin') {
+      res.status(403).json({ message: 'Selecciona uno de tus grupos para publicar el evento.' });
+      return;
+    }
+
+    const updatedFields = eventFields(input);
+    if (updatedFields.capacity < currentEvent.enrolledCount) {
+      res.status(400).json({ message: 'El aforo no puede ser inferior al número de plazas reservadas.' });
+      return;
+    }
+    const filter = req.auth?.role === 'admin'
+      ? { _id: currentEvent._id }
+      : { _id: currentEvent._id, createdBy: req.auth?.userId };
+    const updatedEvent = await Event.findOneAndUpdate(filter, updatedFields, {
+      new: true,
+      runValidators: true
+    });
+    if (!updatedEvent) {
+      res.status(404).json({ message: 'No se encontró el evento.' });
+      return;
+    }
+    res.json(updatedEvent);
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function deleteCommunityEvent(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const id = req.params['id'];
+    if (!mongoose.isValidObjectId(id)) {
+      res.status(404).json({ message: 'No se encontró el evento.' });
+      return;
+    }
+
+    const filter = req.auth?.role === 'admin'
+      ? { _id: id }
+      : { _id: id, createdBy: req.auth?.userId };
+    const event = await Event.findOneAndDelete(filter);
+    if (!event) {
+      res.status(404).json({ message: 'No se encontró el evento o no tienes permiso para eliminarlo.' });
+      return;
+    }
+    await Enrollment.deleteMany({ event: event._id });
+    res.status(204).end();
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function cancelCommunityEvent(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const id = req.params['id'];
+    if (!mongoose.isValidObjectId(id)) {
+      res.status(404).json({ message: 'No se encontró el evento.' });
+      return;
+    }
+
+    const filter = req.auth?.role === 'admin'
+      ? { _id: id }
+      : { _id: id, createdBy: req.auth?.userId };
+    const event = await Event.findOneAndUpdate(
+      { ...filter, status: { $ne: 'cancelled' } },
+      { $set: { status: 'cancelled' } },
+      { new: true, runValidators: true }
+    );
+    if (!event) {
+      res.status(404).json({ message: 'No se encontró el evento o ya estaba cancelado.' });
+      return;
+    }
+    res.json(event);
   } catch (error) {
     next(error);
   }
@@ -154,6 +301,49 @@ export async function enroll(req: AuthenticatedRequest, res: Response, next: Nex
         : '¡Plaza reservada! Te esperamos.',
       joinedGroup: req.body['joinGroup'] === true
     });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function unenroll(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const id = req.params['id'];
+    if (!mongoose.isValidObjectId(id)) {
+      res.status(404).json({ message: 'No se encontró el evento.' });
+      return;
+    }
+
+    const event = await Event.findOne({
+      _id: id,
+      status: 'published',
+      startsAt: { $gt: new Date() }
+    }).select('_id');
+    if (!event) {
+      res.status(404).json({ message: 'Este evento ya no está disponible para modificar la asistencia.' });
+      return;
+    }
+
+    const enrollment = await Enrollment.findOneAndDelete({
+      event: event._id,
+      user: req.auth?.userId
+    });
+    if (!enrollment) {
+      res.status(404).json({ message: 'No tienes una plaza reservada en este evento.' });
+      return;
+    }
+
+    const countUpdate = await Event.updateOne(
+      { _id: event._id, enrolledCount: { $gt: 0 } },
+      { $inc: { enrolledCount: -1 } }
+    );
+    if (countUpdate.modifiedCount === 0) {
+      await Enrollment.create({ event: event._id, user: req.auth?.userId });
+      res.status(409).json({ message: 'No se pudo actualizar el aforo. Tu reserva se ha mantenido.' });
+      return;
+    }
+
+    res.json({ message: 'Ya no tienes una plaza reservada en este evento.' });
   } catch (error) {
     next(error);
   }

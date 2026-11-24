@@ -6,6 +6,7 @@
   </div>
 
   <div class="event-wizard-layout">
+    @if (loadingEdit()) { <div class="alert">Cargando los datos del evento...</div> }
     <ol class="event-wizard-progress" aria-label="Pasos del evento">
       @for (label of vm.eventStepLabels; track $index) {
         <li [class.current]="vm.eventStep() === $index + 1" [class.completed]="vm.eventStep() > $index + 1">

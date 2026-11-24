@@ -40,6 +40,9 @@
   @if (error()) {
     <div class="alert error"><i class="pi pi-exclamation-circle"></i>{{ error() }}</div>
   }
+  @if (joinNotice()) {
+    <div class="alert success" role="status"><i class="pi pi-check-circle"></i>{{ joinNotice() }}</div>
+  }
   @if (loading()) {
     <div class="community-group-empty"><i class="pi pi-spin pi-spinner"></i><span>Cargando grupos...</span></div>
   } @else if (visibleGroups().length > 0) {

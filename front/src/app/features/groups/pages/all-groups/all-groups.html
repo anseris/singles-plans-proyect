@@ -7,6 +7,7 @@
   [canCreateAnyEvent]="vm.isAdmin"
   [loading]="vm.loading()"
   [error]="vm.error()"
+  [joinNotice]="vm.groupJoinNotice()"
   (createRequested)="createGroup()"
   (loginRequested)="vm.openAuth('login')"
   (groupSelected)="vm.openGroupDetails($event)"
