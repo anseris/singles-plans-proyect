@@ -4,6 +4,7 @@ import { EventDetailPage } from './features/events/pages/event-detail/event-deta
 import { EventCreatePage } from './features/events/pages/event-create/event-create';
 import { GroupCreatePage } from './features/groups/pages/group-create/group-create';
 import { GroupDetail } from './features/groups/pages/group-detail/group-detail';
+import { AllGroupsPage } from './features/groups/pages/all-groups/all-groups';
 import { AdminPage } from './features/admin/pages/admin-page/admin-page';
 
 export const routes: Routes = [
@@ -13,6 +14,7 @@ export const routes: Routes = [
   { path: 'eventos/detalles/:id', component: EventDetailPage },
   { path: 'eventos/crear', component: EventCreatePage },
   { path: 'grupos/crear', component: GroupCreatePage },
+  { path: 'grupos/todos', component: AllGroupsPage },
   { path: 'grupos/:id', component: GroupDetail },
   { path: 'administracion', component: AdminPage },
   { path: '**', redirectTo: 'eventos' },

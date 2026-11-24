@@ -1,10 +1,11 @@
-import { Component, computed, input, output, signal } from '@angular/core';
+import { Component, computed, ElementRef, input, output, signal, viewChild } from '@angular/core';
+import { RouterLink } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
 import type { GroupItem } from '../../models/group.model';
 
 @Component({
   selector: 'app-group-collection',
-  imports: [ButtonModule],
+  imports: [ButtonModule, RouterLink],
   templateUrl: './group-collection.html',
   styleUrl: './group-collection.scss'
 })
@@ -13,14 +14,24 @@ export class GroupCollection {
   readonly allGroups = input.required<GroupItem[]>();
   readonly authenticated = input.required<boolean>();
   readonly canCreateAnyEvent = input(false);
-  readonly activeTab = signal<'mine' | 'all' | 'interests'>('mine');
-  readonly showMineTab = computed(() => this.authenticated() && this.myGroups().length > 0);
+  readonly loading = input(false);
+  readonly error = input('');
+  readonly displayMode = input<'carousel' | 'all'>('carousel');
+  readonly activeTab = signal<'mine' | 'managed'>('managed');
+  readonly selectedTab = computed<'mine' | 'managed'>(() =>
+    this.myGroups().length > 0 ? this.activeTab() : 'mine'
+  );
+  readonly showManagedTab = computed(() => this.myGroups().length > 0);
   readonly visibleGroups = computed(() => {
-    if (this.activeTab() === 'mine' && this.showMineTab()) return this.myGroups();
-    if (this.activeTab() === 'interests' && this.authenticated()) return this.interestGroups();
-    return this.allGroups();
+    if (this.displayMode() === 'all') return this.allGroups();
+    if (!this.authenticated()) return [];
+    return this.selectedTab() === 'managed' ? this.myGroups() : this.interestGroups();
   });
+  readonly showCarouselControls = computed(
+    () => this.displayMode() === 'carousel' && this.visibleGroups().length > 2
+  );
   readonly interestGroups = input<GroupItem[]>([]);
+  readonly carousel = viewChild<ElementRef<HTMLDivElement>>('groupCarousel');
   readonly createRequested = output<void>();
   readonly loginRequested = output<void>();
   readonly groupSelected = output<GroupItem>();
@@ -35,10 +46,15 @@ export class GroupCollection {
     return this.interestGroups().some((interestGroup) => interestGroup._id === group._id);
   }
 
-  isActiveTab(tab: 'all' | 'interests'): boolean {
-    if (tab === 'interests') return this.activeTab() === 'interests' && this.authenticated();
-    return this.activeTab() === 'all' || (this.activeTab() === 'mine' && !this.showMineTab()) ||
-      (this.activeTab() === 'interests' && !this.authenticated());
+  selectTab(tab: 'mine' | 'managed'): void {
+    this.activeTab.set(tab);
+    this.carousel()?.nativeElement.scrollTo({ left: 0, behavior: 'smooth' });
+  }
+
+  scrollGroups(direction: -1 | 1): void {
+    const carousel = this.carousel()?.nativeElement;
+    if (!carousel) return;
+    carousel.scrollBy({ left: direction * carousel.clientWidth * 0.8, behavior: 'smooth' });
   }
 
   groupInitial(name: string): string {

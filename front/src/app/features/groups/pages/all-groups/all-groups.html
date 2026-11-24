@@ -1,0 +1,15 @@
+<app-group-collection
+  displayMode="all"
+  [myGroups]="vm.myGroups()"
+  [allGroups]="vm.allGroups()"
+  [interestGroups]="vm.interestGroups()"
+  [authenticated]="!!vm.user()"
+  [canCreateAnyEvent]="vm.isAdmin"
+  [loading]="vm.loading()"
+  [error]="vm.error()"
+  (createRequested)="createGroup()"
+  (loginRequested)="vm.openAuth('login')"
+  (groupSelected)="vm.openGroupDetails($event)"
+  (eventRequested)="createEvent($event._id)"
+  (joinRequested)="vm.joinGroup($event)"
+/>

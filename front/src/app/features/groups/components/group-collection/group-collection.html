@@ -1,56 +1,132 @@
-<section class="community-groups">
+<section class="community-groups" [class.all-groups-page]="displayMode() === 'all'">
+  @if (displayMode() === 'all') {
+    <a class="groups-back-link" routerLink="/eventos"><i class="pi pi-arrow-left"></i> Volver a eventos</a>
+  }
   <div class="section-heading">
     <div>
-      <p class="eyebrow">CREA TU PROPIA COMUNIDAD</p>
-      <h2>Grupos</h2>
-      <p>Descubre comunidades y encuentra gente con quien compartir tus próximos planes.</p>
+      <p class="eyebrow">{{ displayMode() === 'all' ? 'COMUNIDADES DE LA PLATAFORMA' : 'CREA TU PROPIA COMUNIDAD' }}</p>
+      <h2>{{ displayMode() === 'all' ? 'Todos los grupos' : 'Grupos' }}</h2>
+      <p>{{ displayMode() === 'all' ? 'Explora todas las comunidades y encuentra gente con quien compartir tus próximos planes.' : 'Descubre comunidades y encuentra gente con quien compartir tus próximos planes.' }}</p>
     </div>
     <p-button label="Crear grupo" icon="pi pi-users" (onClick)="createRequested.emit()" />
   </div>
-  @if (showMineTab()) {
+
+  @if (displayMode() === 'carousel') {
     <div class="group-tabs" role="tablist" aria-label="Filtrar grupos">
-      <button type="button" role="tab" [attr.aria-selected]="activeTab() === 'mine'" [class.active]="activeTab() === 'mine'" (click)="activeTab.set('mine')">Mis grupos</button>
-      <button type="button" role="tab" [attr.aria-selected]="isActiveTab('all')" [class.active]="isActiveTab('all')" (click)="activeTab.set('all')">Todos los grupos</button>
-      <button type="button" role="tab" [attr.aria-selected]="activeTab() === 'interests'" [class.active]="activeTab() === 'interests'" (click)="activeTab.set('interests')">Grupos de interés</button>
-    </div>
-  } @else {
-    <div class="group-tabs" role="tablist" aria-label="Grupos">
-      <button type="button" role="tab" [attr.aria-selected]="isActiveTab('all')" [class.active]="isActiveTab('all')" (click)="activeTab.set('all')">Todos los grupos</button>
-      @if (authenticated()) {
-        <button type="button" role="tab" [attr.aria-selected]="activeTab() === 'interests'" [class.active]="activeTab() === 'interests'" (click)="activeTab.set('interests')">Grupos de interés</button>
+      <button
+        type="button"
+        role="tab"
+        [attr.aria-selected]="selectedTab() === 'mine'"
+        [class.active]="selectedTab() === 'mine'"
+        (click)="selectTab('mine')"
+      >
+        Mis grupos
+      </button>
+      @if (showManagedTab()) {
+        <button
+          type="button"
+          role="tab"
+          [attr.aria-selected]="selectedTab() === 'managed'"
+          [class.active]="selectedTab() === 'managed'"
+          (click)="selectTab('managed')"
+        >
+          Mis grupos gestionados
+        </button>
       }
+      <a class="all-groups-link" routerLink="/grupos/todos">Todos los grupos <i class="pi pi-arrow-right"></i></a>
     </div>
   }
-  @if (visibleGroups().length > 0) {
-    <div class="community-group-grid">
-      @for (group of visibleGroups(); track group._id) {
-        <article class="community-group-card">
-          <button class="group-card-main" type="button" (click)="groupSelected.emit(group)" [attr.aria-label]="'Ver detalles del grupo ' + group.name">
-            @if (group.imageUrl) {
-              <img class="group-card-image" [src]="group.imageUrl" [alt]="'Imagen del grupo ' + group.name" />
+
+  @if (error()) {
+    <div class="alert error"><i class="pi pi-exclamation-circle"></i>{{ error() }}</div>
+  }
+  @if (loading()) {
+    <div class="community-group-empty"><i class="pi pi-spin pi-spinner"></i><span>Cargando grupos...</span></div>
+  } @else if (visibleGroups().length > 0) {
+    <div
+      class="group-carousel"
+      [class.group-list-grid]="displayMode() === 'all'"
+      [class.has-many-groups]="showCarouselControls()"
+      [class.has-multiple-groups]="visibleGroups().length > 1"
+    >
+      @if (displayMode() === 'carousel' && visibleGroups().length > 1) {
+        <button class="group-carousel-control" type="button" aria-label="Ver grupos anteriores" (click)="scrollGroups(-1)">
+          <i class="pi pi-chevron-left"></i>
+        </button>
+      }
+      <div class="community-group-grid" [class.group-carousel-track]="displayMode() === 'carousel'" #groupCarousel>
+        @for (group of visibleGroups(); track group._id) {
+          <article class="community-group-card">
+            <button
+              class="group-card-main"
+              type="button"
+              (click)="groupSelected.emit(group)"
+              [attr.aria-label]="'Ver detalles del grupo ' + group.name"
+            >
+              @if (group.imageUrl) {
+                <img
+                  class="group-card-image"
+                  [src]="group.imageUrl"
+                  [alt]="'Imagen del grupo ' + group.name"
+                />
+              } @else {
+                <span class="group-card-image group-image-placeholder" aria-hidden="true">{{
+                  groupInitial(group.name)
+                }}</span>
+              }
+              <h3>{{ group.name }}</h3>
+              <span class="group-card-location">
+                <i class="pi pi-map-marker"></i>{{ group.city || 'Comunidad online' }}
+              </span>
+            </button>
+            @if (isOwnGroup(group)) {
+              <p-button
+                label="Crear evento"
+                icon="pi pi-plus"
+                size="small"
+                (onClick)="eventRequested.emit(group)"
+              />
+            } @else if (authenticated() && isInterestGroup(group)) {
+              <p-button
+                label="En mis grupos"
+                icon="pi pi-check"
+                size="small"
+                severity="secondary"
+                [disabled]="true"
+              />
             } @else {
-              <span class="group-card-image group-image-placeholder" aria-hidden="true">{{ groupInitial(group.name) }}</span>
+              <p-button
+                label="Unirme al grupo"
+                icon="pi pi-user-plus"
+                size="small"
+                (onClick)="joinRequested.emit(group)"
+              />
             }
-            <h3>{{ group.name }}</h3>
-            <span class="group-card-location"><i class="pi pi-map-marker"></i>{{ group.city || 'Comunidad online' }}</span>
-          </button>
-          @if (isOwnGroup(group)) {
-            <p-button label="Crear evento" icon="pi pi-plus" size="small" (onClick)="eventRequested.emit(group)" />
-          } @else if (authenticated() && isInterestGroup(group)) {
-            <p-button label="En mis grupos de interés" icon="pi pi-check" size="small" severity="secondary" [disabled]="true" />
-          } @else {
-            <p-button label="Unirme al grupo" icon="pi pi-user-plus" size="small" (onClick)="joinRequested.emit(group)" />
-          }
-        </article>
+          </article>
+        }
+      </div>
+      @if (displayMode() === 'carousel' && visibleGroups().length > 1) {
+        <button class="group-carousel-control" type="button" aria-label="Ver más grupos" (click)="scrollGroups(1)">
+          <i class="pi pi-chevron-right"></i>
+        </button>
       }
     </div>
-  } @else if (authenticated() && activeTab() === 'interests') {
-    <div class="community-group-empty"><i class="pi pi-heart"></i><span>Aún no tienes grupos de interés.</span><button type="button" (click)="activeTab.set('all')">Explora todos los grupos.</button></div>
-  } @else if (authenticated()) {
-    <div class="community-group-empty"><i class="pi pi-users"></i><span>Aún no hay grupos creados.</span><button type="button" (click)="createRequested.emit()">Crea el primero.</button></div>
-  } @else if (allGroups().length === 0) {
-    <div class="community-group-empty"><i class="pi pi-users"></i><span>Aún no hay grupos creados.</span></div>
+  } @else if (!authenticated() && displayMode() === 'carousel') {
+    <div class="community-group-empty">
+      <i class="pi pi-lock"></i><span>Inicia sesión para ver tus grupos.</span>
+      <button type="button" (click)="loginRequested.emit()">Iniciar sesión</button>
+    </div>
+  } @else if (authenticated() && selectedTab() === 'mine' && displayMode() === 'carousel') {
+    <div class="community-group-empty">
+      <i class="pi pi-heart"></i><span>Aún no te has unido a ningún grupo.</span>
+      <a routerLink="/grupos/todos">Explora todos los grupos.</a>
+    </div>
+  } @else if (authenticated() && displayMode() === 'carousel') {
+    <div class="community-group-empty">
+      <i class="pi pi-users"></i><span>Aún no has creado grupos.</span>
+      <button type="button" (click)="createRequested.emit()">Crea el primero.</button>
+    </div>
   } @else {
-    <div class="community-group-empty"><i class="pi pi-lock"></i><span>¿Quieres crear un grupo o apuntarte a un evento?</span><button type="button" (click)="loginRequested.emit()">Regístrate o inicia sesión.</button></div>
+    <div class="community-group-empty"><i class="pi pi-users"></i><span>Aún no hay grupos creados.</span></div>
   }
 </section>

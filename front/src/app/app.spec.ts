@@ -406,7 +406,7 @@ describe('App', () => {
     expect(detail.textContent).toContain('Crear evento');
   });
 
-  it('shows the owned-groups tab only when the authenticated user has groups', async () => {
+  it('shows membership and managed tabs and links to the all-groups view', async () => {
     const fixture = TestBed.createComponent(App);
     fixture.detectChanges();
     await fixture.whenStable();
@@ -426,38 +426,45 @@ describe('App', () => {
       city: 'Valencia'
     };
     app.groups.set([ownGroup]);
-    app.myGroups.set([ownGroup]);
-    app.allGroups.set([ownGroup, otherGroup]);
+    app.myGroups.set([
+      ownGroup,
+      { ...ownGroup, _id: 'group-3', name: 'Rutas del norte' },
+      { ...ownGroup, _id: 'group-4', name: 'Escapadas' }
+    ]);
+    app.allGroups.set([...app.myGroups(), otherGroup]);
     fixture.detectChanges();
 
     const tabs = Array.from(fixture.nativeElement.querySelectorAll('.group-tabs [role="tab"]')) as HTMLButtonElement[];
-    expect(tabs.map((tab) => tab.textContent?.trim())).toEqual(['Mis grupos', 'Todos los grupos', 'Grupos de interés']);
-    expect(fixture.nativeElement.querySelectorAll('.community-group-card').length).toBe(1);
+    expect(tabs.map((tab) => tab.textContent?.trim())).toEqual(['Mis grupos', 'Mis grupos gestionados']);
+    expect((fixture.nativeElement.querySelector('.all-groups-link') as HTMLAnchorElement).getAttribute('href')).toBe('/grupos/todos');
+    expect(fixture.nativeElement.querySelectorAll('.community-group-card').length).toBe(3);
+    expect(fixture.nativeElement.querySelectorAll('.group-carousel-control').length).toBe(2);
     expect(fixture.nativeElement.querySelector('.community-group-card')?.textContent).toContain('Mis rutas');
 
-    tabs[1].click();
-    fixture.detectChanges();
-    expect(fixture.nativeElement.querySelectorAll('.community-group-card').length).toBe(2);
-    expect(fixture.nativeElement.querySelectorAll('.community-group-card p-button').length).toBe(2);
-
     app.interestGroups.set([otherGroup]);
-    tabs[2].click();
+    tabs[0].click();
     fixture.detectChanges();
     expect(fixture.nativeElement.querySelectorAll('.community-group-card').length).toBe(1);
     expect(fixture.nativeElement.querySelector('.community-group-card')?.textContent).toContain('Grupo público');
-    expect(fixture.nativeElement.querySelector('.community-group-card p-button')?.textContent).toContain('En mis grupos de interés');
+    expect(fixture.nativeElement.querySelector('.community-group-card p-button')?.textContent).toContain('En mis grupos');
     app.interestGroups.set([]);
     fixture.detectChanges();
-    expect(fixture.nativeElement.querySelector('.community-group-empty')?.textContent).toContain('Aún no tienes grupos de interés.');
+    expect(fixture.nativeElement.querySelector('.community-group-empty')?.textContent).toContain('Aún no te has unido');
     tabs[1].click();
-    app.groups.set([]);
     app.myGroups.set([]);
     fixture.detectChanges();
     const remainingTabs = Array.from(fixture.nativeElement.querySelectorAll('.group-tabs [role="tab"]')) as HTMLButtonElement[];
-    expect(remainingTabs.map((tab) => tab.textContent?.trim())).toEqual(['Todos los grupos', 'Grupos de interés']);
+    expect(remainingTabs.map((tab) => tab.textContent?.trim())).toEqual(['Mis grupos']);
+
+    (fixture.nativeElement.querySelector('.all-groups-link') as HTMLAnchorElement).click();
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.all-groups-page')).not.toBeNull();
+    expect(fixture.nativeElement.querySelectorAll('.community-group-card').length).toBe(4);
   });
 
-  it('shows all public groups without a My Groups tab when logged out', async () => {
+  it('shows all public groups in the separate view when logged out', async () => {
     const fixture = TestBed.createComponent(App);
     fixture.detectChanges();
     await fixture.whenStable();
@@ -471,7 +478,12 @@ describe('App', () => {
     fixture.detectChanges();
 
     const tabs = Array.from(fixture.nativeElement.querySelectorAll('.group-tabs [role="tab"]')) as HTMLButtonElement[];
-    expect(tabs.map((tab) => tab.textContent?.trim())).toEqual(['Todos los grupos']);
+    expect(tabs.map((tab) => tab.textContent?.trim())).toEqual(['Mis grupos']);
+    expect(fixture.nativeElement.querySelectorAll('.community-group-card').length).toBe(0);
+    (fixture.nativeElement.querySelector('.all-groups-link') as HTMLAnchorElement).click();
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
     expect(fixture.nativeElement.querySelectorAll('.community-group-card').length).toBe(1);
     expect(fixture.nativeElement.querySelector('.community-group-card')?.textContent).toContain('Grupo público');
     const joinButton = fixture.nativeElement.querySelector('.community-group-card p-button button') as HTMLButtonElement;
@@ -482,14 +494,20 @@ describe('App', () => {
     expect(fixture.componentInstance.vm.authMode()).toBe('login');
   });
 
-  it('uses the uppercase first letter as a group card image fallback', () => {
+  it('uses the uppercase first letter as a group card image fallback', async () => {
     const fixture = TestBed.createComponent(App);
+    fixture.detectChanges();
+    await fixture.whenStable();
     fixture.componentInstance.vm.allGroups.set([{
       _id: 'group-3',
       name: '  conciertos locales',
       description: 'Música en directo.',
       city: ''
     }]);
+    fixture.detectChanges();
+    (fixture.nativeElement.querySelector('.all-groups-link') as HTMLAnchorElement).click();
+    fixture.detectChanges();
+    await fixture.whenStable();
     fixture.detectChanges();
 
     const placeholder = fixture.nativeElement.querySelector('.group-image-placeholder') as HTMLElement;

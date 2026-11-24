@@ -1,17 +1,27 @@
-<article class="plan-card event-card" [class.admin-card]="adminView()" role="link" tabindex="0"
+<article
+  class="plan-card event-card"
+  [class.admin-card]="adminView()"
+  role="link"
+  tabindex="0"
   [attr.aria-label]="'Ver detalles de ' + event().title"
-  (click)="openDetails($event)" (keydown.enter)="openDetails($event)">
+  (click)="openDetails($event)"
+  (keydown.enter)="openDetails($event)"
+>
   <div class="card-art">
     @if (event().imageUrl) {
       <img class="card-photo" [src]="event().imageUrl" [alt]="event().title" />
     } @else {
-      <div class="event-image-placeholder" aria-hidden="true">{{ eventInitial(event().title) }}</div>
+      <div class="event-image-placeholder" aria-hidden="true">
+        {{ eventInitial(event().title) }}
+      </div>
     }
   </div>
   <div class="card-content">
     <h3>{{ event().title }}</h3>
-    <p class="event-card-group"><i class="pi pi-users"></i>{{ event().group?.name || 'Grupo sin nombre' }}</p>
-    <p class="event-card-meeting"><i class="pi pi-map-marker"></i>{{ event().meetingPoint?.name || event().meetingPoint?.address || 'Punto de encuentro por confirmar' }}</p>
+    <p class="event-card-group">
+      <i class="pi pi-users"></i>{{ event().group?.name || 'Grupo sin nombre' }}
+    </p>
+    <!-- <p class="event-card-meeting"><i class="pi pi-map-marker"></i>{{ event().meetingPoint?.name || event().meetingPoint?.address || 'Punto de encuentro por confirmar' }}</p> -->
     <div class="event-card-footer">
       <span><i class="pi pi-calendar"></i>{{ eventDateTimeLabel(event()) }}</span>
       <span><i class="pi pi-user"></i>{{ event().enrolledCount ?? 0 }} asistentes</span>

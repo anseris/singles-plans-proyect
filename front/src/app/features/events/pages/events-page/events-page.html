@@ -35,6 +35,8 @@
     [interestGroups]="interestGroups()"
     [authenticated]="authenticated()"
     [canCreateAnyEvent]="canCreateAnyEvent()"
+    [loading]="loading()"
+    [error]="error()"
     (createRequested)="createGroupRequested.emit()"
     (loginRequested)="loginRequested.emit()"
     (groupSelected)="groupSelected.emit($event)"
