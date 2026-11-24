@@ -28,7 +28,7 @@ export async function register(req: Request, res: Response, next: NextFunction):
     const user = await User.create({ name, email, passwordHash: await bcrypt.hash(password, 12) });
     res.status(201).json({
       token: createToken(user.id, user.role),
-      user: { id: user.id, name: user.name, email: user.email, role: user.role }
+      user: { id: user.id, name: user.name, email: user.email, role: user.role, superusuario: user.superusuario }
     });
   } catch (error) {
     if (typeof error === 'object' && error !== null && 'code' in error && error.code === 11000) {
@@ -50,7 +50,7 @@ export async function login(req: Request, res: Response, next: NextFunction): Pr
     }
     res.json({
       token: createToken(user.id, user.role),
-      user: { id: user.id, name: user.name, email: user.email, role: user.role }
+      user: { id: user.id, name: user.name, email: user.email, role: user.role, superusuario: user.superusuario }
     });
   } catch (error) {
     next(error);
@@ -59,12 +59,12 @@ export async function login(req: Request, res: Response, next: NextFunction): Pr
 
 export async function currentUser(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
   try {
-    const user = await User.findById(req.auth?.userId).select('name email role');
+    const user = await User.findById(req.auth?.userId).select('name email role superusuario');
     if (!user) {
       res.status(401).json({ message: 'La cuenta ya no existe.' });
       return;
     }
-    res.json({ id: user.id, name: user.name, email: user.email, role: user.role });
+    res.json({ id: user.id, name: user.name, email: user.email, role: user.role, superusuario: user.superusuario });
   } catch (error) {
     next(error);
   }

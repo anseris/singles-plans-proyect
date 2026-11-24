@@ -5,12 +5,73 @@ import { Event } from '../models/event.model.js';
 import { Enrollment } from '../models/enrollment.model.js';
 import { Group } from '../models/group.model.js';
 import { GroupMembership } from '../models/group-membership.model.js';
-import { GroupInterest } from '../models/group-interest.model.js';
+import { User } from '../models/user.model.js';
+import { PlanSettings } from '../models/plan-settings.model.js';
+
+export async function getPlanSettings(_req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const settings = await PlanSettings.findOneAndUpdate(
+      { key: 'group-plans' },
+      { $setOnInsert: { standardPrice: 2, standardFreeEvents: 3, proMonthlyPrice: 15 } },
+      { upsert: true, new: true }
+    ).lean();
+    res.json(settings);
+  } catch (error) {
+    next(error);
+  }
+}
 
 export async function listAll(_req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const groups = await Group.find().select('name description city ageRange imageUrl interests createdAt').sort({ createdAt: -1 }).lean();
     res.json(groups);
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function getGroupDetails(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const id = req.params['id'];
+    if (!mongoose.isValidObjectId(id)) {
+      res.status(404).json({ message: 'No se encontró el grupo.' });
+      return;
+    }
+
+    const group = await Group.findById(id).lean();
+    if (!group) {
+      res.status(404).json({ message: 'No se encontró el grupo.' });
+      return;
+    }
+
+    const now = new Date();
+    const [upcomingEvents, pastEvents, members, memberCount] = await Promise.all([
+      Event.find({ group: group._id, status: 'published', endsAt: { $gte: now } })
+        .populate('group', 'name city')
+        .sort({ startsAt: 1 })
+        .lean(),
+      Event.find({ group: group._id, status: 'published', endsAt: { $lt: now } })
+        .populate('group', 'name city')
+        .sort({ startsAt: -1 })
+        .lean(),
+      GroupMembership.find({ group: group._id })
+        .populate('user', 'name')
+        .sort({ createdAt: 1 })
+        .lean(),
+      GroupMembership.countDocuments({ group: group._id })
+    ]);
+
+    res.json({
+      group,
+      createdById: String(group.createdBy),
+      upcomingEvents,
+      pastEvents,
+      members: members.flatMap((membership) => {
+        const user = membership.user as { _id?: unknown; name?: string } | null;
+        return user ? [{ id: String(user._id), name: user.name ?? '' }] : [];
+      }),
+      memberCount
+    });
   } catch (error) {
     next(error);
   }
@@ -91,10 +152,7 @@ export async function createGroup(req: AuthenticatedRequest, res: Response, next
     const validInterestValues = Array.isArray(interests) &&
       interests.every((interest: unknown) => typeof interest === 'string' && interest.length <= 40);
     const uniqueInterests = validInterestValues ? [...new Set(interests as string[])] : [];
-    const knownInterestCount = uniqueInterests.length
-      ? await GroupInterest.countDocuments({ name: { $in: uniqueInterests } })
-      : 0;
-    const validInterests = validInterestValues && knownInterestCount === uniqueInterests.length;
+    const validInterests = validInterestValues && uniqueInterests.every((interest) => interest.trim().length > 0);
     const validImage =
       imageUrl === '' ||
       (/^data:image\/(?:jpeg|png|webp);base64,[A-Za-z0-9+/]+={0,2}$/.test(imageUrl) &&
@@ -111,8 +169,13 @@ export async function createGroup(req: AuthenticatedRequest, res: Response, next
       ...(hasAgeRange ? { ageRange: { min: Number(minAge), max: Number(maxAge) } } : {}),
       imageUrl,
       interests: uniqueInterests,
-      createdBy: req.auth?.userId
+      createdBy: req.auth?.userId,
+      plan: req.body['plan'] === 'pro' ? 'pro' : 'standard'
     });
+    await User.updateOne(
+      { _id: req.auth?.userId, superusuario: { $ne: true } },
+      { $set: { superusuario: true } }
+    );
     res.status(201).json(group);
   } catch (error) {
     if (typeof error === 'object' && error !== null && 'code' in error && error.code === 11000) {

@@ -4,8 +4,44 @@ import { Event } from '../models/event.model.js';
 import { Enrollment } from '../models/enrollment.model.js';
 import { Group } from '../models/group.model.js';
 import { GroupInterest } from '../models/group-interest.model.js';
-import { eventFields, hasKnownInterests, isValidEventInput } from '../services/event-input.js';
+import { areValidInterests, eventFields, isValidEventInput } from '../services/event-input.js';
 import type { AuthenticatedRequest } from '../middleware/auth.middleware.js';
+import { PlanSettings } from '../models/plan-settings.model.js';
+
+export async function getPlanSettings(_req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const settings = await PlanSettings.findOneAndUpdate(
+      { key: 'group-plans' },
+      { $setOnInsert: { standardPrice: 2, standardFreeEvents: 3, proMonthlyPrice: 15 } },
+      { upsert: true, new: true }
+    ).lean();
+    res.json(settings);
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function updatePlanSettings(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const standardPrice = Number(req.body['standardPrice']);
+    const standardFreeEvents = Number(req.body['standardFreeEvents']);
+    const proMonthlyPrice = Number(req.body['proMonthlyPrice']);
+    if (!Number.isFinite(standardPrice) || standardPrice < 0 ||
+        !Number.isInteger(standardFreeEvents) || standardFreeEvents < 0 ||
+        !Number.isFinite(proMonthlyPrice) || proMonthlyPrice < 0) {
+      res.status(400).json({ message: 'Indica valores numéricos válidos para los planes.' });
+      return;
+    }
+    const settings = await PlanSettings.findOneAndUpdate(
+      { key: 'group-plans' },
+      { standardPrice, standardFreeEvents, proMonthlyPrice },
+      { upsert: true, new: true, runValidators: true }
+    ).lean();
+    res.json(settings);
+  } catch (error) {
+    next(error);
+  }
+}
 
 export async function listGroups(_req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
@@ -76,7 +112,7 @@ export async function deleteGroup(req: Request, res: Response, next: NextFunctio
 export async function createEvent(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
   try {
     const input = req.body as Record<string, unknown>;
-    if (!isValidEventInput(input, ['excursion', 'trip', 'event']) || !(await hasKnownInterests(input))) {
+    if (!isValidEventInput(input, ['excursion', 'trip', 'event']) || !areValidInterests(input)) {
       res.status(400).json({ message: 'Revisa los datos, selecciona un grupo existente y comprueba las fechas, el precio y el aforo.' });
       return;
     }
@@ -120,8 +156,8 @@ export async function updateEvent(req: Request, res: Response, next: NextFunctio
     for (const field of ['title', 'description', 'type', 'location', 'meetingPoint', 'interests', 'ageRange', 'timeOfDay', 'startsAt', 'endsAt', 'price', 'capacity', 'imageUrl']) {
       if (field in req.body) update[field] = req.body[field];
     }
-    if ('interests' in req.body && !(await hasKnownInterests({ interests: req.body['interests'] }))) {
-      res.status(400).json({ message: 'Selecciona intereses existentes en el catálogo.' });
+    if ('interests' in req.body && !areValidInterests({ interests: req.body['interests'] })) {
+      res.status(400).json({ message: 'Revisa los intereses seleccionados.' });
       return;
     }
     if ('groupId' in req.body) {

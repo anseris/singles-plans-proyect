@@ -8,7 +8,14 @@ import interestsRoutes from './routes/interests.routes.js';
 
 const app = express();
 
+app.disable('etag');
 app.use(cors({ origin: process.env['FRONTEND_ORIGIN'] ?? 'http://localhost:4200' }));
+app.use('/api', (_req, res, next) => {
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Expires', '0');
+  next();
+});
 app.use(express.json({ limit: '3mb' }));
 
 app.get('/api/health', (_req, res) => res.json({ ok: true, message: 'Singles Plans API is running.' }));

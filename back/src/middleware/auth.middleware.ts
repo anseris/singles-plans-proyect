@@ -35,6 +35,24 @@ export function requireAuth(req: AuthenticatedRequest, res: Response, next: Next
   }
 }
 
+export function optionalAuth(req: AuthenticatedRequest, _res: Response, next: NextFunction): void {
+  const authorization = req.header('authorization');
+  const token = authorization?.startsWith('Bearer ') ? authorization.slice(7) : undefined;
+  if (!token) {
+    next();
+    return;
+  }
+  try {
+    const claims = jwt.verify(token, getSecret());
+    if (typeof claims !== 'string' && typeof claims['sub'] === 'string' && ['user', 'admin'].includes(String(claims['role']))) {
+      req.auth = { userId: claims['sub'], role: claims['role'] as UserRole };
+    }
+    next();
+  } catch {
+    next();
+  }
+}
+
 export function requireAdmin(req: AuthenticatedRequest, res: Response, next: NextFunction): void {
   if (req.auth?.role !== 'admin') {
     res.status(403).json({ message: 'Esta sección está reservada a administración.' });

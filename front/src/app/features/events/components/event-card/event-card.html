@@ -1,45 +1,23 @@
-<article class="plan-card" [class.admin-card]="adminView()">
-  <div class="card-art" [class.art-sea]="event().type === 'excursion'" [class.art-mountain]="event().type === 'trip'" [class.art-city]="event().type === 'event'" [class.art-alt]="index() % 2 === 1">
+<article class="plan-card event-card" [class.admin-card]="adminView()" role="link" tabindex="0"
+  [attr.aria-label]="'Ver detalles de ' + event().title"
+  (click)="openDetails($event)" (keydown.enter)="openDetails($event)">
+  <div class="card-art">
     @if (event().imageUrl) {
       <img class="card-photo" [src]="event().imageUrl" [alt]="event().title" />
     } @else {
       <div class="event-image-placeholder" aria-hidden="true">{{ eventInitial(event().title) }}</div>
     }
-    <span class="type-badge">{{ typeLabel(event().type) }}</span>
-    <span class="date-badge"><strong>{{ event().startsAt | date:'dd' }}</strong>{{ event().startsAt | date:'MMM' }}</span>
   </div>
   <div class="card-content">
-    <div class="card-meta"><span><i class="pi pi-map-marker"></i>{{ event().location }}</span><span><i class="pi pi-users"></i>{{ remaining(event()) }} plazas</span></div>
-    @if (event().meetingPoint; as meetingPoint) {
-      <a class="event-meeting-point" [href]="meetingPointMapUrl(event())" target="_blank" rel="noopener noreferrer">
-        <i class="pi pi-map-marker"></i><span><strong>{{ meetingPoint.name }}</strong><small>{{ meetingPoint.address }}</small></span><i class="pi pi-external-link"></i>
-      </a>
-    }
-    @if (event().group) {
-      <div class="event-group"><i class="pi pi-users"></i><span>{{ event().group?.name }}@if (event().group?.city) { · {{ event().group?.city }} }</span></div>
-    }
     <h3>{{ event().title }}</h3>
-    <p class="card-description">{{ event().description }}</p>
-    <div class="event-detail-tags">
-      <span class="event-detail-tag"><i class="pi pi-clock"></i>{{ timeOfDayLabel(event()) }}</span>
-      <span class="event-detail-tag"><i class="pi pi-users"></i>{{ ageRangeLabel(event()) }}</span>
-      @for (interest of event().interests ?? []; track interest) {
-        <span class="event-interest-tag">{{ interest }}</span>
-      }
+    <p class="event-card-group"><i class="pi pi-users"></i>{{ event().group?.name || 'Grupo sin nombre' }}</p>
+    <p class="event-card-meeting"><i class="pi pi-map-marker"></i>{{ event().meetingPoint?.name || event().meetingPoint?.address || 'Punto de encuentro por confirmar' }}</p>
+    <div class="event-card-footer">
+      <span><i class="pi pi-calendar"></i>{{ eventDateTimeLabel(event()) }}</span>
+      <span><i class="pi pi-user"></i>{{ event().enrolledCount ?? 0 }} asistentes</span>
     </div>
-    <div class="card-footer">
-      <span class="price">{{ event().price === 0 ? 'Gratis' : (event().price | currency:'EUR':'symbol':'1.0-2':'es-ES') }} <small>/ persona</small></span>
-      @if (adminView()) {
-        <p-tag [value]="statusLabel(event().status)" [severity]="event().status === 'published' ? 'success' : event().status === 'pending' ? 'warn' : 'secondary'" />
-      } @else {
-        <p-button label="Reservar plaza" icon="pi pi-arrow-up-right" size="small" [disabled]="remaining(event()) === 0" (onClick)="enrollRequested.emit(event())" />
-      }
-    </div>
-    @if (adminView() && event().status === 'pending') {
-      <div class="card-admin-actions">
-        <p-button label="Publicar" icon="pi pi-check" size="small" (onClick)="statusChanged.emit({ event: event(), status: 'published' })" />
-        <p-button label="Rechazar" severity="secondary" size="small" (onClick)="statusChanged.emit({ event: event(), status: 'rejected' })" />
-      </div>
+    @if ((isOwner() || adminView()) && event().status === 'pending') {
+      <span class="event-card-status">Pendiente de aprobación</span>
     }
   </div>
 </article>

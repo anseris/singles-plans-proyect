@@ -1,7 +1,7 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
-import type { EventCreateInput, EventItem } from '../models/event.model';
+import type { EventCreateInput, EventDetails, EventItem } from '../models/event.model';
 
 @Injectable({ providedIn: 'root' })
 export class EventsService {
@@ -16,8 +16,16 @@ export class EventsService {
     return this.http.get<EventItem[]>('/api/admin/events');
   }
 
-  enroll(id: string): Observable<{ message: string }> {
-    return this.http.post<{ message: string }>(`/api/events/${id}/enroll`, {});
+  myEvents(): Observable<{ created: EventItem[]; enrollments: unknown[] }> {
+    return this.http.get<{ created: EventItem[]; enrollments: unknown[] }>('/api/events/mine');
+  }
+
+  eventDetails(id: string): Observable<EventDetails> {
+    return this.http.get<EventDetails>(`/api/events/${id}/details`);
+  }
+
+  enroll(id: string, joinGroup = false): Observable<{ message: string; joinedGroup: boolean }> {
+    return this.http.post<{ message: string; joinedGroup: boolean }>(`/api/events/${id}/enroll`, { joinGroup });
   }
 
   create(

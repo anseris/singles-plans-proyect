@@ -1,6 +1,5 @@
 import mongoose from 'mongoose';
 import type { EventTimeOfDay, EventType } from '../models/event.model.js';
-import { GroupInterest } from '../models/group-interest.model.js';
 
 const eventTypes: readonly EventType[] = ['excursion', 'trip', 'event'];
 
@@ -78,12 +77,12 @@ export function isValidEventInput(input: Record<string, unknown>, allowedTypes: 
   );
 }
 
-export async function hasKnownInterests(input: Record<string, unknown>): Promise<boolean> {
+export function areValidInterests(input: Record<string, unknown>): boolean {
   const interests = input['interests'] ?? [];
-  if (!Array.isArray(interests) || !interests.every((interest) => typeof interest === 'string')) return false;
-  const uniqueInterests = [...new Set(interests)];
-  if (uniqueInterests.length === 0) return true;
-  return (await GroupInterest.countDocuments({ name: { $in: uniqueInterests } })) === uniqueInterests.length;
+  return Array.isArray(interests) &&
+    interests.every((interest) =>
+      typeof interest === 'string' && interest.trim().length > 0 && interest.trim().length <= 40
+    );
 }
 
 export function eventFields(input: Record<string, unknown>) {

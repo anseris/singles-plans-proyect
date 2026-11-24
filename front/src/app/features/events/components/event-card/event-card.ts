@@ -1,53 +1,34 @@
-import { CurrencyPipe, DatePipe } from '@angular/common';
-import { Component, input, output } from '@angular/core';
-import { ButtonModule } from 'primeng/button';
-import { TagModule } from 'primeng/tag';
-import type { EventItem, EventStatus, EventType } from '../../models/event.model';
+import { Component, inject, input } from '@angular/core';
+import { Router } from '@angular/router';
+import type { EventItem } from '../../models/event.model';
 
 @Component({
   selector: 'app-event-card',
-  imports: [CurrencyPipe, DatePipe, ButtonModule, TagModule],
   templateUrl: './event-card.html',
   styleUrl: './event-card.scss'
 })
 export class EventCard {
+  private readonly router = inject(Router);
   readonly event = input.required<EventItem>();
-  readonly index = input.required<number>();
   readonly adminView = input(false);
-  readonly enrollRequested = output<EventItem>();
-  readonly statusChanged = output<{ event: EventItem; status: 'published' | 'rejected' }>();
-  readonly editRequested = output<EventItem>();
-  readonly deleteRequested = output<EventItem>();
-
-  remaining(event: EventItem): number {
-    return Math.max(event.capacity - (event.enrolledCount ?? 0), 0);
-  }
-
-  typeLabel(type: EventType): string {
-    return { excursion: 'Excursión', trip: 'Viaje', event: 'Evento' }[type];
-  }
-
-  statusLabel(status: EventStatus): string {
-    return { pending: 'Pendiente', published: 'Publicado', rejected: 'Rechazado', cancelled: 'Cancelado' }[status];
-  }
+  readonly isOwner = input(false);
 
   eventInitial(title: string): string {
     return title.trim().charAt(0).toLocaleUpperCase('es-ES') || '?';
   }
 
-  meetingPointMapUrl(event: EventItem): string {
-    const point = event.meetingPoint;
-    if (!point) return '';
-    const query = encodeURIComponent(point.address || `${point.name}, ${event.location}`);
-    const placeId = point.placeId ? `&query_place_id=${encodeURIComponent(point.placeId)}` : '';
-    return `https://www.google.com/maps/search/?api=1&query=${query}${placeId}`;
+  eventDateTimeLabel(event: EventItem): string {
+    return new Intl.DateTimeFormat('es-ES', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    }).format(new Date(event.startsAt));
   }
 
-  timeOfDayLabel(event: EventItem): string {
-    return { afternoon: 'Tarde', night: 'Noche', 'all-day': 'Todo el día' }[event.timeOfDay ?? 'afternoon'];
-  }
-
-  ageRangeLabel(event: EventItem): string {
-    return event.ageRange ? `${event.ageRange.min}–${event.ageRange.max} años` : 'A partir de 18 años';
+  openDetails(event: Event): void {
+    if (event.target instanceof Element && event.target.closest('a, button')) return;
+    void this.router.navigate(['/eventos/detalles', this.event()._id]);
   }
 }

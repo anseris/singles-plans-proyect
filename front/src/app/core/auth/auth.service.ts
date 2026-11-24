@@ -7,6 +7,7 @@ export interface AppUser {
   name: string;
   email: string;
   role: 'user' | 'admin';
+  superusuario?: boolean;
 }
 
 interface AuthResponse {
@@ -43,6 +44,11 @@ export class AuthService {
   logout(): void {
     sessionStorage.removeItem('singles-plans-token');
     this.user.set(null);
+  }
+
+  setSuperusuario(value: boolean): void {
+    const currentUser = this.user();
+    if (currentUser) this.user.set({ ...currentUser, superusuario: value });
   }
 
   token(): string | null {

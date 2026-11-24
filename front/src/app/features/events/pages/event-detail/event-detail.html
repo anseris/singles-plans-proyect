@@ -1,0 +1,157 @@
+<section class="event-detail-page">
+  <a class="detail-back" routerLink="/eventos"
+    ><i class="pi pi-arrow-left"></i> Todos los eventos</a
+  >
+  @if (loading()) {
+    <div class="detail-empty">
+      <i class="pi pi-spin pi-spinner"></i>
+      <p>Cargando evento...</p>
+    </div>
+  } @else if (error()) {
+    <div class="detail-empty">
+      <h1>{{ error() }}</h1>
+      <a routerLink="/eventos">Volver a eventos</a>
+    </div>
+  } @else if (event(); as item) {
+    @if (item.imageUrl) {
+      <img class="detail-cover" [src]="item.imageUrl" [alt]="item.title" />
+    }
+    <div class="detail-content">
+      <p class="eyebrow">{{ item.location }}</p>
+      <h1>{{ item.title }}</h1>
+      <p class="event-type">
+        {{ item.type === 'event' ? 'Evento' : item.type === 'trip' ? 'Viaje' : 'Excursión' }}
+      </p>
+      <p class="event-description">{{ item.description }}</p>
+      <div class="detail-facts">
+        <span
+          ><i class="pi pi-calendar"></i><strong>Empieza</strong
+          >{{ item.startsAt | date: 'medium' : '' : 'es-ES' }}</span
+        >
+        <span
+          ><i class="pi pi-calendar"></i><strong>Termina</strong
+          >{{ item.endsAt | date: 'medium' : '' : 'es-ES' }}</span
+        >
+        <span
+          ><i class="pi pi-map-marker"></i><strong>Punto de encuentro</strong
+          >{{ item.meetingPoint?.name || item.location }}
+          @if (item.meetingPoint?.address) {
+            · {{ item.meetingPoint?.address }}
+          }
+        </span>
+        <span
+          ><i class="pi pi-users"></i><strong>Asistentes</strong>{{ item.enrolledCount ?? 0 }} /
+          {{ item.capacity }}</span
+        >
+        <span
+          ><i class="pi pi-ticket"></i><strong>Precio</strong
+          >{{
+            item.price === 0
+              ? 'Gratis'
+              : (item.price | currency: 'EUR' : 'symbol' : '1.0-2' : 'es-ES')
+          }}</span
+        >
+        <span
+          ><i class="pi pi-clock"></i><strong>Horario</strong
+          >{{
+            item.timeOfDay === 'night'
+              ? 'Noche'
+              : item.timeOfDay === 'all-day'
+                ? 'Todo el día'
+                : 'Tarde'
+          }}</span
+        >
+        <span
+          ><i class="pi pi-users"></i><strong>Edad</strong
+          >{{
+            item.ageRange
+              ? item.ageRange.min + '–' + item.ageRange.max + ' años'
+              : 'A partir de 18 años'
+          }}</span
+        >
+      </div>
+      @if (item.interests?.length) {
+        <div class="detail-interests">
+          @for (interest of item.interests; track interest) {
+            <span>{{ interest }}</span>
+          }
+        </div>
+      }
+      @if (item.group) {
+        <a class="detail-group" [routerLink]="['/grupos', item.group._id]">
+          <i class="pi pi-users"></i
+          ><span
+            ><small>Organizado en el grupo</small><strong>{{ item.group.name }}</strong></span
+          ><i class="pi pi-arrow-up-right"></i>
+        </a>
+      }
+      @if (item.createdBy?.name) {
+        <p class="event-organizer">Organiza: {{ item.createdBy?.name }}</p>
+      }
+      @if (item.isCreator) {
+        <p class="detail-owner-note">
+          Este es tu evento
+          @if (item.status === 'pending') {
+            y está pendiente de aprobación.
+          }
+        </p>
+      } @else if (item.isEnrolled) {
+        <p class="detail-owner-note">Ya has confirmado tu asistencia.</p>
+      } @else if (item.status === 'published') {
+        <p-button
+          label="Asistiré"
+          icon="pi pi-check"
+          (onClick)="requestAttendance()"
+          [disabled]="(item.enrolledCount ?? 0) >= item.capacity"
+        />
+      } @else {
+        <p-tag value="Pendiente de aprobación" severity="warn" />
+      }
+    </div>
+  } @else {
+    <div class="detail-empty">
+      <h1>Evento no encontrado</h1>
+      <a routerLink="/eventos">Volver a eventos</a>
+    </div>
+  }
+</section>
+
+<p-dialog
+  [visible]="attendanceDialogOpen()"
+  (visibleChange)="attendanceDialogOpen.set($event)"
+  header="Confirmar asistencia"
+  [modal]="true"
+  [draggable]="false"
+  [resizable]="false"
+  styleClass="attendance-dialog"
+>
+  @if (event(); as item) {
+    <p>
+      ¿Quieres unirte al grupo <strong>{{ item.group?.name }}</strong> donde se organiza este
+      evento?
+    </p>
+    <p class="attendance-dialog-help">
+      Puedes asistir al evento aunque decidas no unirte al grupo.
+    </p>
+    @if (vm.error()) {
+      <div class="alert error">{{ vm.error() }}</div>
+    }
+    <div class="attendance-dialog-actions">
+      <p-button
+        label="Sí, unirme y asistiré"
+        icon="pi pi-users"
+        [loading]="attendanceSubmitting()"
+        (onClick)="confirmAttendance(true)"
+      />
+      <p-button
+        label="No, solo asistiré"
+        severity="secondary"
+        [loading]="attendanceSubmitting()"
+        (onClick)="confirmAttendance(false)"
+      />
+      <button type="button" class="attendance-cancel" (click)="attendanceDialogOpen.set(false)">
+        Cancelar
+      </button>
+    </div>
+  }
+</p-dialog>

@@ -1,0 +1,117 @@
+<section class="wizard-page">
+  <div class="wizard-heading">
+    <button type="button" class="wizard-back" (click)="cancel()"><i class="pi pi-arrow-left"></i> Volver</button>
+    <p class="eyebrow">NUEVO GRUPO</p>
+    <h1>Crea tu comunidad</h1>
+    <p>Completa el perfil de tu grupo paso a paso.</p>
+  </div>
+
+  <div class="wizard-layout">
+    <ol class="wizard-progress" aria-label="Pasos para crear un grupo">
+      @for (label of vm.groupStepLabels; track $index) {
+        <li [class.current]="vm.groupStep() === $index + 1" [class.completed]="vm.groupStep() > $index + 1">
+          <span>{{ $index + 1 }}</span><small>{{ label }}</small>
+        </li>
+      }
+    </ol>
+
+    <form class="wizard-card" (ngSubmit)="vm.groupStep() === 7 ? submit() : vm.nextGroupStep()">
+      @if (vm.error()) { <div class="alert error">{{ vm.error() }}</div> }
+      @if (vm.groupStep() === 1) {
+        <label>Nombre del grupo<input pInputText name="name" [(ngModel)]="vm.newGroup.name" maxlength="100" required placeholder="Ej. Escapadas por España" /></label>
+      } @else if (vm.groupStep() === 2) {
+        <label>ZONA O CIUDAD<input pInputText name="city" [(ngModel)]="vm.newGroup.city" maxlength="120" placeholder="Ej. Madrid y alrededores" /></label>
+      } @else if (vm.groupStep() === 3) {
+        <div class="group-image-upload">
+          <input id="group-image" type="file" accept="image/jpeg,image/png,image/webp" (change)="vm.onGroupImageSelected($event)" />
+          <label for="group-image" class="group-image-attach"><i class="pi pi-paperclip"></i> Adjuntar imagen</label>
+          <small>JPG, PNG o WebP · máximo 2 MB</small>
+        </div>
+        @if (vm.newGroup.imageUrl) { <img class="wizard-preview" [src]="vm.newGroup.imageUrl" alt="Vista previa del grupo" /> }
+      } @else if (vm.groupStep() === 4) {
+        <fieldset class="wizard-interests"><legend>¿Qué planes os interesan?</legend>
+          @for (interest of vm.availableGroupInterests(); track interest._id) {
+            <button type="button" [class.selected]="vm.newGroup.interests.includes(interest.name)" (click)="vm.toggleGroupInterest(interest.name)">{{ interest.name }}</button>
+          }
+          @for (interest of vm.newGroupInterestOptions(); track interest) {
+            <button type="button" [class.selected]="vm.newGroup.interests.includes(interest)" (click)="vm.toggleGroupInterest(interest)">{{ interest }}</button>
+          }
+        </fieldset>
+        <div class="custom-interest-create">
+          <label>¿Falta algún interés?<input name="customInterest" [(ngModel)]="interestDraft" maxlength="40" placeholder="Ej. Senderismo" /></label>
+          <button type="button" class="custom-interest-button" [disabled]="!interestDraft.trim()" (click)="createInterest()"><i class="pi pi-plus"></i> Añadir interés</button>
+        </div>
+      } @else if (vm.groupStep() === 5) {
+        <label>Descripción<textarea name="description" [(ngModel)]="vm.newGroup.description" rows="6" maxlength="1500" required placeholder="¿Qué tipo de experiencias compartiréis?"></textarea></label>
+      } @else if (vm.groupStep() === 6) {
+        <fieldset class="group-plan-options">
+          <legend>Selecciona tu plan</legend>
+          <label class="group-plan-card" [class.selected]="vm.newGroup.plan === 'standard'">
+            <input type="radio" name="groupPlan" value="standard" [checked]="vm.newGroup.plan === 'standard'" (change)="vm.newGroup.plan = 'standard'" />
+            <span class="plan-name">Estándar</span>
+            <strong>{{ vm.planSettings().standardPrice | currency:'EUR':'symbol':'1.0-2':'es-ES' }}/evento</strong>
+            <small>Número de eventos ilimitado</small>
+            <small>Los {{ vm.planSettings().standardFreeEvents }} primeros eventos por grupo son gratis</small>
+          </label>
+          <label class="group-plan-card" [class.selected]="vm.newGroup.plan === 'pro'">
+            <input type="radio" name="groupPlan" value="pro" [checked]="vm.newGroup.plan === 'pro'" (change)="vm.newGroup.plan = 'pro'" />
+            <span class="plan-name">Pro</span>
+            <strong>{{ vm.planSettings().proMonthlyPrice | currency:'EUR':'symbol':'1.0-2':'es-ES' }}/mes</strong>
+            <small>Número de eventos ilimitado</small>
+            <small>Publicación ilimitada de eventos</small>
+          </label>
+        </fieldset>
+      } @else if (!createdGroup()) {
+        <article class="group-preview-card">
+          @if (vm.newGroup.imageUrl) {
+            <img [src]="vm.newGroup.imageUrl" [alt]="vm.newGroup.name" />
+          } @else {
+            <div class="group-preview-placeholder">{{ vm.newGroup.name.trim().charAt(0).toLocaleUpperCase('es-ES') || '?' }}</div>
+          }
+          <div class="group-preview-content">
+            <p class="eyebrow">GRUPO DE LA COMUNIDAD</p>
+            <h2>{{ vm.newGroup.name }}</h2>
+            <p class="group-preview-meta"><i class="pi pi-map-marker"></i>{{ vm.newGroup.city || 'Comunidad online' }}</p>
+            <p class="group-preview-description">{{ vm.newGroup.description }}</p>
+            @if (vm.newGroup.interests.length) {
+              <div class="group-preview-interests">
+                @for (interest of vm.newGroup.interests; track interest) { <span>{{ interest }}</span> }
+              </div>
+            }
+          </div>
+        </article>
+      } @else {
+        @if (createdGroup(); as group) {
+          <article class="group-preview-card">
+            @if (group.imageUrl) {
+              <img [src]="group.imageUrl" [alt]="group.name" />
+            } @else {
+              <div class="group-preview-placeholder">{{ group.name.trim().charAt(0).toLocaleUpperCase('es-ES') || '?' }}</div>
+            }
+            <div class="group-preview-content">
+              <p class="eyebrow">GRUPO CREADO</p>
+              <h2>{{ group.name }}</h2>
+              <p class="group-preview-meta"><i class="pi pi-map-marker"></i>{{ group.city || 'Comunidad online' }}</p>
+              <p class="group-preview-description">{{ group.description }}</p>
+              @if (group.interests?.length) {
+                <div class="group-preview-interests">
+                  @for (interest of group.interests; track interest) { <span>{{ interest }}</span> }
+                </div>
+              }
+            </div>
+          </article>
+          <div class="created-group-actions">
+            <p-button label="Crear evento" icon="pi pi-plus" type="button" (onClick)="createEvent()" />
+            <p-button label="Volver a eventos" icon="pi pi-arrow-right" iconPos="right" severity="secondary" type="button" (onClick)="cancel()" />
+          </div>
+        }
+      }
+      <div class="wizard-actions">
+        @if (vm.groupStep() > 1 && !createdGroup()) { <button type="button" class="wizard-text" (click)="vm.previousGroupStep()"><i class="pi pi-arrow-left"></i> Atrás</button> }
+        @if (vm.groupStep() > 1 && vm.groupStep() < 5) { <button type="button" class="wizard-text" (click)="vm.skipGroupStep()">Omitir</button> }
+        @if (vm.groupStep() < 7) { <p-button label="Continuar" icon="pi pi-arrow-right" iconPos="right" type="submit" /> }
+        @else if (!createdGroup()) { <p-button label="Crear grupo" icon="pi pi-check" type="submit" /> }
+      </div>
+    </form>
+  </div>
+</section>

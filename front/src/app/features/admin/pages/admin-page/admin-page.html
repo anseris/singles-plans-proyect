@@ -1,0 +1,21 @@
+@if (!ready()) {
+  <div class="empty-state"><i class="pi pi-spin pi-spinner"></i><p>Cargando administración...</p></div>
+} @else {
+  <app-admin-dashboard
+    [events]="vm.events()"
+    [groups]="vm.groups()"
+    [interests]="vm.availableGroupInterests()"
+    [loading]="vm.loading()"
+    [error]="vm.error()"
+    [notice]="vm.notice()"
+    [pendingCount]="vm.pendingCount()"
+    [publishedCount]="vm.publishedCount()"
+    (publicViewRequested)="showPublicView()"
+    (groupCreationRequested)="createGroup()"
+    (interestCreateRequested)="createInterest($event)"
+    (eventCreationRequested)="createEvent()"
+    (statusChanged)="updateStatus($event.event, $event.status)"
+    (editRequested)="editEvent($event)"
+    (deleteRequested)="deleteEvent($event)"
+  />
+}

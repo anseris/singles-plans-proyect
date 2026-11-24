@@ -1,31 +1,140 @@
 <section class="group-detail-page">
-  <button class="group-back-button" type="button" (click)="backRequested.emit()"><i class="pi pi-arrow-left"></i> Volver a eventos</button>
-  <article class="group-detail-card">
-    @if (group().imageUrl) {
-      <img class="group-detail-image" [src]="group().imageUrl" [alt]="'Imagen del grupo ' + group().name" />
-    } @else {
-      <div class="group-detail-image group-image-placeholder" aria-hidden="true">{{ group().name.trim().charAt(0).toLocaleUpperCase('es-ES') || '?' }}</div>
-    }
-    <div class="group-detail-content">
-      <p class="eyebrow">GRUPO DE LA COMUNIDAD</p>
-      <h1>{{ group().name }}</h1>
-      <div class="group-detail-meta">
-        <span><i class="pi pi-map-marker"></i>{{ group().city || 'Comunidad online' }}</span>
-        @if (group().ageRange; as ageRange) {
-          <span><i class="pi pi-users"></i>{{ ageRange.min }}–{{ ageRange.max }} años</span>
-        }
-      </div>
-      <p class="group-detail-description">{{ group().description }}</p>
-      @if (group().interests?.length) {
-        <div class="group-detail-interests" aria-label="Intereses del grupo">
-          @for (interest of group().interests; track interest) {
-            <span>{{ interest }}</span>
-          }
+  <a class="group-back-button" routerLink="/eventos"
+    ><i class="pi pi-arrow-left"></i> Volver a eventos</a
+  >
+
+  @if (loading()) {
+    <div class="group-detail-state">
+      <i class="pi pi-spin pi-spinner"></i>
+      <p>Cargando grupo...</p>
+    </div>
+  } @else if (error()) {
+    <div class="group-detail-state">
+      <h1>{{ error() }}</h1>
+      <a routerLink="/eventos">Volver a eventos</a>
+    </div>
+  } @else if (group(); as currentGroup) {
+    <article class="group-detail-card">
+      @if (currentGroup.imageUrl) {
+        <img
+          class="group-detail-image"
+          [src]="currentGroup.imageUrl"
+          [alt]="'Imagen del grupo ' + currentGroup.name"
+        />
+      } @else {
+        <div class="group-detail-image group-image-placeholder" aria-hidden="true">
+          {{ currentGroup.name.trim().charAt(0).toLocaleUpperCase('es-ES') || '?' }}
         </div>
       }
-      @if (canCreateEvent()) {
-        <p-button label="Crear evento" icon="pi pi-plus" (onClick)="eventRequested.emit(group())" />
-      }
+      <div class="group-detail-content">
+        <p class="eyebrow">GRUPO DE LA COMUNIDAD</p>
+        <h1>{{ currentGroup.name }}</h1>
+        <div class="group-detail-meta">
+          <span><i class="pi pi-map-marker"></i>{{ currentGroup.city || 'Comunidad online' }}</span>
+          @if (currentGroup.ageRange; as ageRange) {
+            <span><i class="pi pi-users"></i>{{ ageRange.min }}–{{ ageRange.max }} años</span>
+          }
+        </div>
+        <p class="group-detail-description">{{ currentGroup.description }}</p>
+        @if (currentGroup.interests?.length) {
+          <div class="group-detail-interests" aria-label="Intereses del grupo">
+            @for (interest of currentGroup.interests; track interest) {
+              <span>{{ interest }}</span>
+            }
+          </div>
+        }
+        @if (canCreateEvent()) {
+          <p-button label="Crear evento" icon="pi pi-plus" (onClick)="createEvent(currentGroup)" />
+        }
+      </div>
+    </article>
+
+    @if (details(); as groupDetails) {
+      <section class="group-detail-section">
+        <div class="group-section-heading">
+          <div>
+            <p class="eyebrow">AGENDA DEL GRUPO</p>
+            <h2>Eventos del grupo</h2>
+          </div>
+        </div>
+        <div class="group-event-tabs" role="tablist" aria-label="Eventos del grupo">
+          <button
+            type="button"
+            role="tab"
+            [attr.aria-selected]="eventsTab() === 'upcoming'"
+            [class.active]="eventsTab() === 'upcoming'"
+            (click)="eventsTab.set('upcoming')"
+          >
+            Próximos <span>{{ groupDetails.upcomingEvents.length }}</span>
+          </button>
+          <button
+            type="button"
+            role="tab"
+            [attr.aria-selected]="eventsTab() === 'past'"
+            [class.active]="eventsTab() === 'past'"
+            (click)="eventsTab.set('past')"
+          >
+            Pasados <span>{{ groupDetails.pastEvents.length }}</span>
+          </button>
+        </div>
+        @if (eventsTab() === 'upcoming' && groupDetails.upcomingEvents.length) {
+          <div class="group-events-grid">
+            @for (event of groupDetails.upcomingEvents; track event._id) {
+              <app-event-card [event]="event" />
+            }
+          </div>
+        } @else if (eventsTab() === 'upcoming') {
+          <div class="group-detail-empty">
+            <i class="pi pi-calendar"></i>
+            <p>No hay próximos eventos publicados en este grupo.</p>
+          </div>
+        } @else if (groupDetails.pastEvents.length) {
+          <div class="group-events-grid">
+            @for (event of groupDetails.pastEvents; track event._id) {
+              <app-event-card [event]="event" />
+            }
+          </div>
+        } @else {
+          <div class="group-detail-empty">
+            <i class="pi pi-history"></i>
+            <p>Este grupo todavía no tiene eventos pasados.</p>
+          </div>
+        }
+      </section>
+
+      <section class="group-detail-section group-members-section">
+        <div class="group-section-heading">
+          <div>
+            <p class="eyebrow">LA COMUNIDAD</p>
+            <h2>Miembros del grupo</h2>
+          </div>
+          <span
+            >{{ groupDetails.memberCount }}
+            {{ groupDetails.memberCount === 1 ? 'miembro' : 'miembros' }}</span
+          >
+        </div>
+        @if (groupDetails.members.length) {
+          <ul class="group-member-list">
+            @for (member of groupDetails.members; track member.id) {
+              <li>
+                <span class="group-member-avatar">{{
+                  member.name.trim().charAt(0).toLocaleUpperCase('es-ES') || '?'
+                }}</span><span>{{ member.name }}</span>
+              </li>
+            }
+          </ul>
+        } @else {
+          <div class="group-detail-empty">
+            <i class="pi pi-users"></i>
+            <p>Aún no hay miembros apuntados a este grupo.</p>
+          </div>
+        }
+      </section>
+    }
+  } @else {
+    <div class="group-detail-state">
+      <h1>Grupo no encontrado</h1>
+      <a routerLink="/eventos">Volver a eventos</a>
     </div>
-  </article>
+  }
 </section>

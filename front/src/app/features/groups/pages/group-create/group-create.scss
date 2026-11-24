@@ -1,0 +1,369 @@
+.wizard-page {
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 64px 24px 90px;
+}
+
+.wizard-heading {
+  margin-bottom: 32px;
+  text-align: center;
+}
+
+.wizard-heading h1 {
+  margin: 8px 0;
+  font: 800 42px/1.05 Manrope, sans-serif;
+}
+
+.wizard-heading p:last-child {
+  color: var(--muted);
+}
+
+.wizard-back {
+  display: block;
+  margin: 0 auto 28px 0;
+  border: 0;
+  background: transparent;
+  color: var(--sea);
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.wizard-layout {
+  display: grid;
+  grid-template-columns: 220px minmax(0, 620px);
+  justify-content: center;
+  align-items: start;
+  gap: 28px;
+}
+
+.wizard-progress {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  list-style: none;
+}
+
+.wizard-progress li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  border-radius: 10px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.wizard-progress li > span {
+  display: grid;
+  width: 30px;
+  height: 30px;
+  place-items: center;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+}
+
+.wizard-progress li.current {
+  background: var(--mist);
+  color: var(--ink);
+  font-weight: 800;
+}
+
+.wizard-progress li.current > span,
+.wizard-progress li.completed > span {
+  border-color: var(--sea);
+  background: var(--sea);
+  color: white;
+}
+
+.wizard-card {
+  display: grid;
+  min-height: 390px;
+  align-content: start;
+  gap: 24px;
+  padding: 34px;
+  border: 1px solid var(--line);
+  border-radius: 24px;
+  background: white;
+  box-shadow: 0 24px 60px rgba(27, 58, 52, .08);
+}
+
+.wizard-card label {
+  display: grid;
+  gap: 9px;
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+}
+
+.wizard-card input,
+.wizard-card textarea {
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #fff;
+  color: var(--ink);
+  font: 500 14px Manrope, sans-serif;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.wizard-card input { min-height: 48px; padding: 0 14px; }
+.wizard-card textarea { resize: vertical; padding: 14px; }
+
+.wizard-preview {
+  width: 100%;
+  max-height: 220px;
+  border-radius: 14px;
+  object-fit: cover;
+}
+
+.wizard-interests {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.wizard-interests legend {
+  width: 100%;
+  margin-bottom: 14px;
+  font-weight: 800;
+}
+
+.wizard-interests button {
+  padding: 10px 16px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: white;
+  cursor: pointer;
+}
+
+.wizard-interests button.selected {
+  border-color: var(--sea);
+  background: var(--sea);
+  color: white;
+}
+
+.wizard-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: auto;
+}
+
+.wizard-actions .wizard-text {
+  margin-right: auto;
+  border: 0;
+  background: transparent;
+  color: var(--sea);
+  cursor: pointer;
+  font-weight: 800;
+}
+
+.custom-interest-create {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.custom-interest-button {
+  min-height: 48px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 12px;
+  background: var(--sea);
+  color: white;
+  cursor: pointer;
+  font-weight: 800;
+}
+
+.custom-interest-button:disabled {
+  cursor: not-allowed;
+  opacity: .45;
+}
+
+.group-preview-card {
+  display: grid;
+  grid-template-columns: minmax(180px, 42%) 1fr;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: white;
+}
+
+.group-preview-card > img,
+.group-preview-placeholder {
+  width: 100%;
+  min-height: 300px;
+  height: 100%;
+  object-fit: cover;
+}
+
+.group-preview-placeholder {
+  display: grid;
+  place-items: center;
+  background: #e7f0ec;
+  color: var(--sea);
+  font: 800 68px Manrope, sans-serif;
+}
+
+.group-preview-content {
+  align-self: center;
+  padding: 28px;
+}
+
+.group-preview-content h2 {
+  margin: 8px 0 12px;
+  font: 800 30px Manrope, sans-serif;
+}
+
+.group-preview-meta {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.group-preview-description {
+  margin: 18px 0;
+  color: #536868;
+  line-height: 1.7;
+  white-space: pre-line;
+}
+
+.group-preview-interests {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.group-preview-interests span {
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: #e7f0ec;
+  color: var(--sea);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.created-group-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 18px;
+}
+
+.group-image-upload {
+  display: grid;
+  justify-items: start;
+  gap: 10px;
+}
+
+.group-image-upload input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+}
+
+.group-image-attach {
+  display: inline-flex !important;
+  grid-template-columns: none;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 14px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: white;
+  color: var(--sea) !important;
+  cursor: pointer;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.group-image-upload small {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 500;
+  text-transform: none;
+}
+
+.group-plan-options {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.group-plan-options legend {
+  margin-bottom: 14px;
+  font-weight: 800;
+}
+
+.group-plan-card {
+  display: grid !important;
+  gap: 8px !important;
+  min-height: 190px;
+  padding: 22px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: white;
+  cursor: pointer;
+  text-transform: none !important;
+  letter-spacing: 0 !important;
+}
+
+.group-plan-card.selected {
+  border: 2px solid var(--sea);
+  background: var(--mist);
+  box-shadow: 0 12px 30px rgba(27,58,52,.08);
+}
+
+.group-plan-card input {
+  width: 18px;
+  min-height: 18px;
+  margin: 0;
+  accent-color: var(--sea);
+}
+
+.group-plan-card .plan-name {
+  font: 800 21px Manrope, sans-serif;
+}
+
+.group-plan-card strong {
+  color: var(--sea);
+  font-size: 18px;
+}
+
+.group-plan-card small {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+@media (max-width: 760px) {
+  .wizard-page { padding: 40px 16px 70px; }
+  .wizard-heading h1 { font-size: 34px; }
+  .wizard-layout { grid-template-columns: 1fr; }
+  .wizard-progress { grid-template-columns: repeat(7, 1fr); }
+  .wizard-progress li { justify-content: center; }
+  .wizard-progress small { display: none; }
+  .wizard-card { min-height: 360px; padding: 24px 18px; }
+  .custom-interest-create { grid-template-columns: 1fr; }
+  .group-preview-card { grid-template-columns: 1fr; }
+  .group-preview-card > img,
+  .group-preview-placeholder { min-height: 190px; max-height: 220px; }
+}

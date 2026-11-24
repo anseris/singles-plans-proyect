@@ -1,11 +1,13 @@
 <header class="site-header">
-  <a class="brand" href="#" (click)="sectionSelected.emit('events'); $event.preventDefault()">
+  <a class="brand" routerLink="/eventos">
     <span class="brand-mark"><i class="pi pi-compass"></i></span>
     <span>Singles<span class="brand-highlight">Plans</span></span>
   </a>
   <nav class="main-nav" aria-label="Navegación principal">
-    <button type="button" [class.active]="activeSection() === 'events' && !adminView()" (click)="sectionSelected.emit('events')">Eventos</button>
-    <button type="button" [class.active]="activeSection() === 'trips' && !adminView()" (click)="sectionSelected.emit('trips')">Viajes</button>
+    <a routerLink="/eventos" [class.active]="activeSection() === 'events' && !adminView()"
+      >Eventos</a
+    >
+    <a routerLink="/viajes" [class.active]="activeSection() === 'trips' && !adminView()">Viajes</a>
   </nav>
   <div class="header-actions">
     @if (user(); as currentUser) {
@@ -18,7 +20,9 @@
       <span class="user-greeting">Hola, {{ currentUser.name.split(' ')[0] }}</span>
       <button class="text-button" type="button" (click)="logoutRequested.emit()">Salir</button>
     } @else {
-      <button class="text-button desktop-only" type="button" (click)="loginRequested.emit()">Iniciar sesión</button>
+      <button class="text-button desktop-only" type="button" (click)="loginRequested.emit()">
+        Iniciar sesión
+      </button>
       <p-button label="Crear cuenta" (onClick)="registerRequested.emit()" />
     }
   </div>

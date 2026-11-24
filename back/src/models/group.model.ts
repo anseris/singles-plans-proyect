@@ -16,6 +16,7 @@ const groupSchema = new Schema(
     ageRange: { type: ageRangeSchema, required: false },
     imageUrl: { type: String, maxlength: 3_000_000, default: '' },
     interests: { type: [{ type: String, trim: true, maxlength: 40 }], default: [] },
+    plan: { type: String, enum: ['standard', 'pro'], default: 'standard', required: true },
     createdBy: { type: Schema.Types.ObjectId, ref: 'User', required: true }
   },
   { timestamps: true }

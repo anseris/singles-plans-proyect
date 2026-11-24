@@ -1,10 +1,11 @@
-import { Component, input, output } from '@angular/core';
+import { Component, inject, input, output } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
 import { TagModule } from 'primeng/tag';
 import type { EventItem, EventStatus } from '../../../events/models/event.model';
 import type { GroupItem, InterestItem } from '../../../groups/models/group.model';
+import { SinglesPlansFacade } from '../../../../core/application/singles-plans.facade';
 
 @Component({
   selector: 'app-admin-dashboard',
@@ -13,6 +14,7 @@ import type { GroupItem, InterestItem } from '../../../groups/models/group.model
   styleUrl: './admin-dashboard.scss'
 })
 export class AdminDashboard {
+  readonly vm = inject(SinglesPlansFacade);
   readonly events = input.required<EventItem[]>();
   readonly groups = input.required<GroupItem[]>();
   readonly interests = input.required<InterestItem[]>();
@@ -29,6 +31,26 @@ export class AdminDashboard {
   readonly editRequested = output<EventItem>();
   readonly deleteRequested = output<EventItem>();
   interestDraft = '';
+
+  ngOnInit(): void {
+    void this.vm.loadPlanSettings();
+  }
+
+  savePlanSettings(): void {
+    void this.vm.updatePlanSettings(this.vm.planSettings());
+  }
+
+  updateStandardPrice(value: number | string): void {
+    this.vm.planSettings.update((settings) => ({ ...settings, standardPrice: Number(value) }));
+  }
+
+  updateStandardFreeEvents(value: number | string): void {
+    this.vm.planSettings.update((settings) => ({ ...settings, standardFreeEvents: Number(value) }));
+  }
+
+  updateProMonthlyPrice(value: number | string): void {
+    this.vm.planSettings.update((settings) => ({ ...settings, proMonthlyPrice: Number(value) }));
+  }
 
   createInterest(): void {
     const name = this.interestDraft.trim();

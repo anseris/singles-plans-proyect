@@ -1,7 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
-import type { CreateGroupInput, GroupItem, InterestItem } from '../models/group.model';
+import type { CreateGroupInput, GroupDetails, GroupItem, InterestItem, PlanSettings } from '../models/group.model';
 
 @Injectable({ providedIn: 'root' })
 export class GroupsService {
@@ -9,6 +9,10 @@ export class GroupsService {
 
   allGroups(): Observable<GroupItem[]> {
     return this.http.get<GroupItem[]>('/api/groups');
+  }
+
+  groupDetails(id: string): Observable<GroupDetails> {
+    return this.http.get<GroupDetails>(`/api/groups/${id}/details`);
   }
 
   adminGroups(): Observable<GroupItem[]> {
@@ -41,5 +45,17 @@ export class GroupsService {
 
   createGroup(group: CreateGroupInput): Observable<GroupItem> {
     return this.http.post<GroupItem>('/api/groups', group);
+  }
+
+  planSettings(): Observable<PlanSettings> {
+    return this.http.get<PlanSettings>('/api/groups/plans');
+  }
+
+  adminPlanSettings(): Observable<PlanSettings> {
+    return this.http.get<PlanSettings>('/api/admin/plans');
+  }
+
+  updatePlanSettings(settings: PlanSettings): Observable<PlanSettings> {
+    return this.http.put<PlanSettings>('/api/admin/plans', settings);
   }
 }

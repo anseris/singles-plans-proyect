@@ -9,9 +9,15 @@
 .interest-create-form { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 16px; }
 .interest-create-form input { flex: 1 1 220px; min-width: 0; }
 .interest-tag-list { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+.plan-settings-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin: 16px 0; }
+.plan-settings-card { display: grid; gap: 12px; padding: 16px; border: 1px solid var(--line); border-radius: 12px; background: var(--paper); }
+.plan-settings-card h3 { margin: 0 0 4px; }
+.plan-settings-card label { display: grid; gap: 7px; color: var(--muted); font-size: 11px; font-weight: 700; }
+.plan-settings-card input { min-height: 42px; }
 .list-heading > div { display: flex; align-items: center; gap: 12px; }
 .list-heading .p-button { font-size: 11px; padding: .68rem 1rem; }
 @media (max-width: 620px) {
   .list-heading { align-items: flex-start; gap: 14px; }
   .list-heading > div { align-items: flex-start; flex-direction: column; gap: 5px; }
+  .plan-settings-grid { grid-template-columns: 1fr; }
 }

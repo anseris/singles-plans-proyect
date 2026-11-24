@@ -35,6 +35,29 @@
   </section>
   <section class="admin-list group-management">
     <div class="list-heading">
+      <div><h2>Planes de grupo</h2><span>Condiciones comerciales</span></div>
+    </div>
+    <div class="plan-settings-grid">
+      <div class="plan-settings-card">
+        <h3>Estándar</h3>
+        <label>Precio por evento (€)
+          <input pInputText type="number" min="0" step="0.01" [ngModel]="vm.planSettings().standardPrice" (ngModelChange)="updateStandardPrice($event)" name="standardPrice" />
+        </label>
+        <label>Primeros eventos gratis por grupo
+          <input pInputText type="number" min="0" step="1" [ngModel]="vm.planSettings().standardFreeEvents" (ngModelChange)="updateStandardFreeEvents($event)" name="standardFreeEvents" />
+        </label>
+      </div>
+      <div class="plan-settings-card">
+        <h3>Pro</h3>
+        <label>Cuota mensual (€)
+          <input pInputText type="number" min="0" step="0.01" [ngModel]="vm.planSettings().proMonthlyPrice" (ngModelChange)="updateProMonthlyPrice($event)" name="proMonthlyPrice" />
+        </label>
+      </div>
+    </div>
+    <p-button label="Guardar planes" icon="pi pi-save" type="button" (onClick)="savePlanSettings()" />
+  </section>
+  <section class="admin-list group-management">
+    <div class="list-heading">
       <div><h2>2. Intereses</h2><span>{{ interests().length }} intereses disponibles</span></div>
     </div>
     <p class="group-help">Añade opciones que las personas podrán seleccionar al crear su grupo.</p>

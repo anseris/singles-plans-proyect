@@ -1,0 +1,25 @@
+:host { display: block; }
+.event-detail-page { max-width: 980px; margin: 0 auto; padding: 48px 24px 90px; }
+.detail-back { display: inline-flex; gap: 8px; margin-bottom: 24px; color: var(--sea); font-weight: 800; text-decoration: none; }
+.detail-cover { width: 100%; max-height: 430px; border-radius: 24px; object-fit: cover; }
+.detail-content { max-width: 760px; padding: 34px 0; }
+.detail-content h1 { margin: 8px 0 18px; font: 800 44px/1.05 Manrope, sans-serif; }
+.event-description { white-space: pre-line; line-height:1.75; }
+.event-type { color:var(--sea); font-size:12px; font-weight:800; text-transform:uppercase; letter-spacing:.08em; }
+.event-organizer { color:var(--muted); font-size:13px; }
+.detail-facts { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; margin:28px 0; }
+.detail-facts span { display:grid; grid-template-columns:auto 1fr; gap:5px 9px; align-items:center; color:var(--muted); }
+.detail-facts span > strong { grid-column:2; color:var(--ink); font-size:12px; }
+.detail-facts span > i { grid-row:1 / span 2; color:var(--sea); }
+.detail-interests { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:22px; }
+.detail-interests span { padding:7px 11px; border-radius:999px; background:#e7f0ec; color:var(--sea); font-size:11px; font-weight:700; }
+.detail-group { display:flex; align-items:center; gap:12px; width:max-content; max-width:100%; margin:0 0 24px; padding:14px 16px; border:1px solid var(--line); border-radius:14px; color:var(--sea); text-decoration:none; }
+.detail-group span { display:grid; gap:4px; }
+.detail-group small { color:var(--muted); }
+.detail-group strong { color:var(--ink); }
+.detail-owner-note { color:var(--sea); font-weight:700; }
+.detail-empty { text-align:center; padding:100px 20px; }
+.attendance-dialog-help { color:var(--muted); font-size:13px; }
+.attendance-dialog-actions { display:grid; gap:10px; margin-top:20px; }
+.attendance-dialog-actions .attendance-cancel { padding:10px; border:0; background:transparent; color:var(--muted); cursor:pointer; }
+@media (max-width:620px) { .detail-facts { grid-template-columns:1fr; } }

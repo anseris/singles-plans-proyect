@@ -1,23 +1,45 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
+import { Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { AuthService } from '../auth/auth.service';
 import { EventsService } from '../../features/events/data-access/events.service';
 import { GroupsService } from '../../features/groups/data-access/groups.service';
-import type { EventCreateInput, EventItem, EventMeetingPoint, EventTimeOfDay } from '../../features/events/models/event.model';
-import type { CreateGroupInput, GroupItem, InterestItem } from '../../features/groups/models/group.model';
+import type {
+  EventCreateInput,
+  EventItem,
+  EventMeetingPoint,
+  EventTimeOfDay,
+} from '../../features/events/models/event.model';
+import type {
+  CreateGroupInput,
+  GroupItem,
+  InterestItem,
+  PlanSettings,
+} from '../../features/groups/models/group.model';
 
 @Injectable({ providedIn: 'root' })
 export class SinglesPlansFacade {
+  private readonly router = inject(Router);
   private readonly auth = inject(AuthService);
   private readonly eventsApi = inject(EventsService);
   private readonly groupsApi = inject(GroupsService);
 
   readonly events = signal<EventItem[]>([]);
+  readonly myEvents = signal<EventItem[]>([]);
+  readonly eventListView = signal<'mine' | 'all'>('all');
+  readonly visibleEvents = computed(() =>
+    this.isSuperusuario && this.eventListView() === 'mine' ? this.myEvents() : this.events(),
+  );
   readonly groups = signal<GroupItem[]>([]);
   readonly myGroups = signal<GroupItem[]>([]);
   readonly allGroups = signal<GroupItem[]>([]);
   readonly interestGroups = signal<GroupItem[]>([]);
   readonly availableGroupInterests = signal<InterestItem[]>([]);
+  readonly planSettings = signal<PlanSettings>({
+    standardPrice: 2,
+    standardFreeEvents: 3,
+    proMonthlyPrice: 15,
+  });
   readonly user = this.auth.user;
   readonly loading = signal(true);
   readonly error = signal('');
@@ -32,41 +54,86 @@ export class SinglesPlansFacade {
   readonly activeSection = signal<'events' | 'trips'>('events');
   readonly searchTerm = signal('');
   readonly googleMapsApiKey = window.SINGLESPLANS_CONFIG?.googleMapsApiKey?.trim() ?? '';
-  readonly pendingCount = computed(() => this.events().filter((event) => event.status === 'pending').length);
-  readonly publishedCount = computed(() => this.events().filter((event) => event.status === 'published').length);
+  readonly pendingCount = computed(
+    () => this.events().filter((event) => event.status === 'pending').length,
+  );
+  readonly publishedCount = computed(
+    () => this.events().filter((event) => event.status === 'published').length,
+  );
   readonly filteredEvents = computed(() => {
     const query = this.searchTerm().trim().toLocaleLowerCase('es');
-    return this.events().filter((event) => {
-      const searchableText = `${event.title} ${event.description} ${event.location} ${event.meetingPoint?.name ?? ''}`.toLocaleLowerCase('es');
+    return this.visibleEvents().filter((event) => {
+      const searchableText =
+        `${event.title} ${event.description} ${event.location} ${event.meetingPoint?.name ?? ''}`.toLocaleLowerCase(
+          'es',
+        );
       return !query || searchableText.includes(query);
     });
   });
 
   credentials = { name: '', email: '', password: '' };
   newEvent: EventCreateInput = this.emptyEvent();
-  readonly eventStepLabels = ['Nombre', 'Zona o ciudad', 'Punto de encuentro', 'Imagen', 'Intereses', 'Rango de edad', 'Empieza / Termina', 'Plazas y precio', 'Descripción'] as const;
+  readonly eventStepLabels = [
+    'Nombre',
+    'Zona o ciudad',
+    'Punto de encuentro',
+    'Imagen',
+    'Intereses',
+    'Rango de edad',
+    'Empieza / Termina',
+    'Plazas y precio',
+    'Descripción',
+  ] as const;
   readonly eventStep = signal(1);
+  readonly newEventInterestOptions = signal<string[]>([]);
   readonly eventAnyAge = signal(false);
   eventMinimumAge = 18;
   eventMaximumAge = 100;
   readonly eventIsFree = signal(false);
-  readonly groupStepLabels = ['Nombre', 'Zona o ciudad', 'Imagen', 'Intereses', 'Descripción'] as const;
+  readonly groupStepLabels = [
+    'Nombre',
+    'Zona o ciudad',
+    'Imagen',
+    'Intereses',
+    'Descripción',
+    'Plan',
+    'Vista previa',
+  ] as const;
   readonly groupStep = signal(1);
+  readonly newGroupInterestOptions = signal<string[]>([]);
   newGroup: CreateGroupInput = this.emptyGroup();
   newInterestName = '';
 
   initialize(): void {
-    void this.auth.restoreSession().then(() => {
-      if (this.user()?.role === 'admin') this.adminView.set(true);
-      void this.loadEvents();
-    }).catch((error: unknown) => {
-      this.error.set(this.errorMessage(error));
-      void this.loadEvents();
-    });
+    void this.auth
+      .restoreSession()
+      .then(() => {
+        if (this.isSuperusuario) this.eventListView.set('mine');
+        void this.loadPlanSettings();
+        void this.loadEvents();
+      })
+      .catch((error: unknown) => {
+        this.error.set(this.errorMessage(error));
+        void this.loadEvents();
+      });
+  }
+
+  addEventInterest(name: string): boolean {
+    const normalizedName = name.trim();
+    if (!normalizedName || normalizedName.length > 40) return false;
+    const existing = [
+      ...this.availableGroupInterests().map((item) => item.name),
+      ...this.newEventInterestOptions(),
+    ].find((item) => item.toLocaleLowerCase('es') === normalizedName.toLocaleLowerCase('es'));
+    const interestName = existing ?? normalizedName;
+    if (!existing) this.newEventInterestOptions.update((items) => [...items, interestName]);
+    if (!this.newEvent.interests.includes(interestName)) this.toggleEventInterest(interestName);
+    return true;
   }
 
   private resetEventOptions(): void {
     this.eventStep.set(1);
+    this.newEventInterestOptions.set([]);
     this.eventAnyAge.set(false);
     this.eventMinimumAge = 18;
     this.eventMaximumAge = 100;
@@ -75,6 +142,35 @@ export class SinglesPlansFacade {
 
   get isAdmin(): boolean {
     return this.user()?.role === 'admin';
+  }
+
+  get isSuperusuario(): boolean {
+    return this.user()?.superusuario === true;
+  }
+
+  async loadPlanSettings(): Promise<void> {
+    try {
+      const settings = await firstValueFrom(this.groupsApi.planSettings());
+      this.planSettings.set({
+        standardPrice: Number.isFinite(settings.standardPrice) ? settings.standardPrice : 2,
+        standardFreeEvents: Number.isInteger(settings.standardFreeEvents)
+          ? settings.standardFreeEvents
+          : 3,
+        proMonthlyPrice: Number.isFinite(settings.proMonthlyPrice) ? settings.proMonthlyPrice : 15,
+      });
+    } catch {
+      // Los valores predeterminados se mantienen si el API no está disponible.
+    }
+  }
+
+  async updatePlanSettings(settings: PlanSettings): Promise<void> {
+    this.error.set('');
+    try {
+      this.planSettings.set(await firstValueFrom(this.groupsApi.updatePlanSettings(settings)));
+      this.notice.set('Condiciones de los planes actualizadas.');
+    } catch (error) {
+      this.error.set(this.errorMessage(error));
+    }
   }
 
   get canCreateEventInSelectedGroup(): boolean {
@@ -97,10 +193,11 @@ export class SinglesPlansFacade {
       } else {
         await this.auth.login(this.credentials.email, this.credentials.password);
       }
-      this.adminView.set(this.isAdmin);
+      this.adminView.set(false);
       this.dialogOpen.set(false);
       this.notice.set(`¡Hola, ${this.user()?.name}!`);
       await this.loadEvents();
+      if (this.isAdmin) void this.router.navigate(['/administracion']);
     } catch (error) {
       this.error.set(this.errorMessage(error));
     }
@@ -117,24 +214,35 @@ export class SinglesPlansFacade {
     this.loading.set(true);
     this.error.set('');
     try {
-      const events = this.isAdmin && this.adminView()
-        ? await firstValueFrom(this.eventsApi.adminEvents())
-        : await firstValueFrom(this.eventsApi.publicEvents(this.activeSection()));
+      const events =
+        this.isAdmin && this.adminView()
+          ? await firstValueFrom(this.eventsApi.adminEvents())
+          : await firstValueFrom(this.eventsApi.publicEvents(this.activeSection()));
       this.events.set(events);
       this.allGroups.set(await firstValueFrom(this.groupsApi.allGroups()));
-      const interests = this.isAdmin && this.adminView()
-        ? this.groupsApi.adminInterests()
-        : this.groupsApi.allInterests();
+      const interests =
+        this.isAdmin && this.adminView()
+          ? this.groupsApi.adminInterests()
+          : this.groupsApi.allInterests();
       this.availableGroupInterests.set(await firstValueFrom(interests));
       if (this.user()) {
         const myGroups = await firstValueFrom(this.groupsApi.myGroups());
         this.myGroups.set(myGroups);
         this.interestGroups.set(await firstValueFrom(this.groupsApi.interestGroups()));
-        this.groups.set(this.isAdmin ? await firstValueFrom(this.groupsApi.adminGroups()) : myGroups);
+        this.groups.set(
+          this.isAdmin ? await firstValueFrom(this.groupsApi.adminGroups()) : myGroups,
+        );
+        if (this.isSuperusuario) {
+          const myEvents = await firstValueFrom(this.eventsApi.myEvents());
+          this.myEvents.set(myEvents.created);
+        } else {
+          this.myEvents.set([]);
+        }
       } else {
         this.myGroups.set([]);
         this.interestGroups.set([]);
         this.groups.set([]);
+        this.myEvents.set([]);
       }
     } catch (error) {
       this.error.set(this.errorMessage(error));
@@ -143,19 +251,21 @@ export class SinglesPlansFacade {
     }
   }
 
-  async enroll(event: EventItem): Promise<void> {
+  async enroll(event: EventItem, joinGroup = false): Promise<boolean> {
     if (!this.user()) {
       this.openAuth('login');
-      return;
+      return false;
     }
     this.error.set('');
     this.notice.set('');
     try {
-      const result = await firstValueFrom(this.eventsApi.enroll(event._id));
+      const result = await firstValueFrom(this.eventsApi.enroll(event._id, joinGroup));
       this.notice.set(result.message);
       await this.loadEvents();
+      return true;
     } catch (error) {
       this.error.set(this.errorMessage(error));
+      return false;
     }
   }
 
@@ -168,7 +278,9 @@ export class SinglesPlansFacade {
     try {
       const result = await firstValueFrom(this.groupsApi.joinGroup(group._id));
       this.notice.set(result.message);
-      this.interestGroups.update((groups) => groups.some((item) => item._id === group._id) ? groups : [...groups, group]);
+      this.interestGroups.update((groups) =>
+        groups.some((item) => item._id === group._id) ? groups : [...groups, group],
+      );
     } catch (error) {
       this.error.set(this.errorMessage(error));
     }
@@ -180,7 +292,9 @@ export class SinglesPlansFacade {
     try {
       const interest = await firstValueFrom(this.groupsApi.createInterest(name));
       this.availableGroupInterests.update((interests) =>
-        [...interests, interest].sort((first, second) => first.name.localeCompare(second.name, 'es'))
+        [...interests, interest].sort((first, second) =>
+          first.name.localeCompare(second.name, 'es'),
+        ),
       );
       this.newInterestName = '';
       this.notice.set(`Interés «${interest.name}» añadido.`);
@@ -189,37 +303,64 @@ export class SinglesPlansFacade {
     }
   }
 
-  async submitEvent(): Promise<void> {
+  addGroupInterest(name: string): void {
+    const normalizedName = name.trim();
+    if (!normalizedName || normalizedName.length > 40) return;
+    const existingName = [
+      ...this.availableGroupInterests().map((item) => item.name),
+      ...this.newGroupInterestOptions(),
+    ].find((item) => item.toLocaleLowerCase('es') === normalizedName.toLocaleLowerCase('es'));
+    const interestName = existingName ?? normalizedName;
+    if (!existingName) this.newGroupInterestOptions.update((items) => [...items, interestName]);
+    if (!this.newGroup.interests.includes(interestName)) this.toggleGroupInterest(interestName);
+  }
+
+  setEventListView(view: 'mine' | 'all'): void {
+    this.eventListView.set(view);
+    this.searchTerm.set('');
+  }
+
+  async submitEvent(): Promise<EventItem | null> {
     this.error.set('');
     this.notice.set('');
     if (!this.newEvent.description.trim()) {
       this.eventStep.set(10);
       this.error.set('La descripción es obligatoria.');
-      return;
+      return null;
     }
     try {
       const editingId = this.editingId();
+      let savedEvent: EventItem;
       if (editingId) {
-        await firstValueFrom(this.eventsApi.update(editingId, this.newEvent));
+        savedEvent = await firstValueFrom(this.eventsApi.update(editingId, this.newEvent));
         this.notice.set('Cambios guardados.');
       } else {
-        await firstValueFrom(this.eventsApi.create(this.newEvent, this.isAdmin));
-        this.notice.set(this.isAdmin
-          ? 'La experiencia ya está publicada en SinglesPlans.'
-          : 'Tu evento se ha enviado y está pendiente de aprobación por SinglesPlans.');
+        savedEvent = await firstValueFrom(this.eventsApi.create(this.newEvent, this.isAdmin));
+        this.notice.set(
+          this.isAdmin
+            ? 'La experiencia ya está publicada en SinglesPlans.'
+            : 'Tu evento se ha enviado y está pendiente de aprobación por SinglesPlans.',
+        );
       }
       this.createOpen.set(false);
       this.editingId.set(null);
       this.newEvent = this.emptyEvent();
+      this.newEventInterestOptions.set([]);
       this.eventStep.set(1);
       await this.loadEvents();
+      if (!editingId && this.isSuperusuario) this.eventListView.set('mine');
+      return savedEvent;
     } catch (error) {
       this.error.set(this.errorMessage(error));
+      return null;
     }
   }
 
   openCreateEvent(): void {
-    if (!this.isAdmin) return;
+    if (!this.user()) {
+      this.openAuth('register');
+      return;
+    }
     this.error.set('');
     if (this.groups().length === 0) {
       this.openCreateGroup();
@@ -238,6 +379,7 @@ export class SinglesPlansFacade {
     }
     this.error.set('');
     this.newGroup = this.emptyGroup();
+    this.newGroupInterestOptions.set([]);
     this.groupStep.set(1);
     this.groupOpen.set(true);
   }
@@ -274,7 +416,10 @@ export class SinglesPlansFacade {
     const file = input.files?.[0];
     if (!file) return;
 
-    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type) || file.size > 2 * 1024 * 1024) {
+    if (
+      !['image/jpeg', 'image/png', 'image/webp'].includes(file.type) ||
+      file.size > 2 * 1024 * 1024
+    ) {
       this.error.set('Selecciona una imagen JPG, PNG o WebP de máximo 2 MB.');
       input.value = '';
       return;
@@ -297,7 +442,7 @@ export class SinglesPlansFacade {
     this.selectedGroup.set(group);
     this.error.set('');
     this.notice.set('');
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    void this.router.navigate(['/grupos', group._id]);
   }
 
   closeGroupDetails(): void {
@@ -305,33 +450,38 @@ export class SinglesPlansFacade {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
-  async submitGroup(): Promise<void> {
+  async submitGroup(): Promise<GroupItem | null> {
     this.error.set('');
     if (!this.newGroup.name.trim()) {
       this.groupStep.set(1);
       this.error.set('El nombre del grupo es obligatorio.');
-      return;
+      return null;
     }
     if (!this.newGroup.description.trim()) {
       this.error.set('La descripción es obligatoria.');
-      return;
+      return null;
     }
     try {
-      const group = await firstValueFrom(this.groupsApi.createGroup({
-        ...this.newGroup,
-        name: this.newGroup.name.trim(),
-        description: this.newGroup.description.trim(),
-        city: this.newGroup.city.trim()
-      }));
+      const group = await firstValueFrom(
+        this.groupsApi.createGroup({
+          ...this.newGroup,
+          name: this.newGroup.name.trim(),
+          description: this.newGroup.description.trim(),
+          city: this.newGroup.city.trim(),
+        }),
+      );
+      this.auth.setSuperusuario(true);
+      this.eventListView.set('mine');
       this.groups.update((groups) => [...groups, group]);
       this.groupOpen.set(false);
       this.notice.set(`Grupo «${group.name}» creado. Añade ahora un evento para el grupo.`);
       this.editingId.set(null);
       this.newEvent = { ...this.emptyEvent(), groupId: group._id };
       this.resetEventOptions();
-      this.createOpen.set(true);
+      return group;
     } catch (error) {
       this.error.set(this.errorMessage(error));
+      return null;
     }
   }
 
@@ -352,55 +502,69 @@ export class SinglesPlansFacade {
       price: event.price,
       capacity: event.capacity,
       imageUrl: event.imageUrl ?? '',
-      groupId: event.group?._id ?? ''
+      groupId: event.group?._id ?? '',
     };
     this.eventAnyAge.set(!event.ageRange);
     this.eventMinimumAge = event.ageRange?.min ?? 18;
     this.eventMaximumAge = event.ageRange?.max ?? 100;
     this.eventIsFree.set(event.price === 0);
     this.eventStep.set(1);
+    this.newEventInterestOptions.set(
+      (event.interests ?? []).filter(
+        (interest) =>
+          !this.availableGroupInterests().some((available) => available.name === interest),
+      ),
+    );
     this.createOpen.set(true);
+    void this.router.navigate(['/eventos/crear'], { queryParams: { editar: event._id } });
   }
 
   createEventInGroup(group: GroupItem): void {
+    this.createEventForGroupId(group._id);
+  }
+
+  createEventForGroupId(groupId: string): void {
     this.error.set('');
     this.editingId.set(null);
-    this.newEvent = { ...this.emptyEvent(), groupId: group._id, type: 'event' };
+    this.newEvent = { ...this.emptyEvent(), groupId, type: 'event' };
     this.resetEventOptions();
     this.createOpen.set(true);
   }
 
   nextEventStep(): void {
     const step = this.eventStep();
-    const valid = step === 1
-      ? !!this.newEvent.title.trim()
-      : step === 2
-        ? !!this.newEvent.location.trim()
-        : step === 3
-          ? !!this.newEvent.meetingPoint.name.trim() && !!this.newEvent.meetingPoint.address.trim()
-          : step === 6
-            ? this.eventAnyAge() || (
-              Number.isInteger(this.eventMinimumAge) &&
-              Number.isInteger(this.eventMaximumAge) &&
-              this.eventMinimumAge >= 18 &&
-              this.eventMaximumAge <= 100 &&
-              this.eventMinimumAge <= this.eventMaximumAge
-            )
-            : step === 7
-              ? this.validEventDates()
-              : step === 8
-                ? Number.isInteger(this.newEvent.capacity) &&
-                  this.newEvent.capacity > 0 &&
-                  (this.eventIsFree() || (Number.isFinite(this.newEvent.price) && this.newEvent.price >= 0))
+    const valid =
+      step === 1
+        ? !!this.newEvent.title.trim()
+        : step === 2
+          ? !!this.newEvent.location.trim()
+          : step === 3
+            ? !!this.newEvent.meetingPoint.name.trim() &&
+              !!this.newEvent.meetingPoint.address.trim()
+            : step === 6
+              ? this.eventAnyAge() ||
+                (Number.isInteger(this.eventMinimumAge) &&
+                  Number.isInteger(this.eventMaximumAge) &&
+                  this.eventMinimumAge >= 18 &&
+                  this.eventMaximumAge <= 100 &&
+                  this.eventMinimumAge <= this.eventMaximumAge)
+              : step === 7
+                ? this.validEventDates()
+                : step === 8
+                  ? Number.isInteger(this.newEvent.capacity) &&
+                    this.newEvent.capacity > 0 &&
+                    (this.eventIsFree() ||
+                      (Number.isFinite(this.newEvent.price) && this.newEvent.price >= 0))
                   : true;
     if (!valid) {
       this.error.set(this.eventStepError(step));
       return;
     }
     this.error.set('');
-    if (step === 6) this.newEvent.ageRange = this.eventAnyAge()
-      ? null
-      : { min: this.eventMinimumAge, max: this.eventMaximumAge };
+    if (step === 6)
+      this.newEvent.ageRange = this.eventAnyAge()
+        ? null
+        : { min: this.eventMinimumAge, max: this.eventMaximumAge };
     if (step === 8 && this.eventIsFree()) this.newEvent.price = 0;
     this.eventStep.update((current) => Math.min(current + 1, this.eventStepLabels.length));
   }
@@ -433,7 +597,7 @@ export class SinglesPlansFacade {
       address: name ? `${name}, ${this.newEvent.location}` : '',
       placeId: '',
       latitude: null,
-      longitude: null
+      longitude: null,
     };
   }
 
@@ -448,7 +612,7 @@ export class SinglesPlansFacade {
     const times = {
       afternoon: ['16:00', '20:00'],
       night: ['20:00', '23:59'],
-      'all-day': ['00:00', '23:59']
+      'all-day': ['00:00', '23:59'],
     } satisfies Record<EventTimeOfDay, [string, string]>;
     this.newEvent.startsAt = `${startDate}T${times[timeOfDay][0]}`;
     this.newEvent.endsAt = `${endDate}T${times[timeOfDay][1]}`;
@@ -468,7 +632,10 @@ export class SinglesPlansFacade {
     const input = event.target as HTMLInputElement;
     const file = input.files?.[0];
     if (!file) return;
-    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type) || file.size > 2 * 1024 * 1024) {
+    if (
+      !['image/jpeg', 'image/png', 'image/webp'].includes(file.type) ||
+      file.size > 2 * 1024 * 1024
+    ) {
       this.error.set('Selecciona una imagen JPG, PNG o WebP de máximo 2 MB.');
       input.value = '';
       return;
@@ -558,7 +725,7 @@ export class SinglesPlansFacade {
       price: 0,
       capacity: 10,
       imageUrl: '',
-      groupId: ''
+      groupId: '',
     };
   }
 
@@ -569,10 +736,12 @@ export class SinglesPlansFacade {
   private validEventDates(): boolean {
     const startsAt = new Date(this.newEvent.startsAt);
     const endsAt = new Date(this.newEvent.endsAt);
-    return Number.isFinite(startsAt.getTime()) &&
+    return (
+      Number.isFinite(startsAt.getTime()) &&
       Number.isFinite(endsAt.getTime()) &&
       startsAt.getTime() > Date.now() &&
-      endsAt.getTime() >= startsAt.getTime();
+      endsAt.getTime() >= startsAt.getTime()
+    );
   }
 
   private eventStepError(step: number): string {
@@ -588,7 +757,7 @@ export class SinglesPlansFacade {
   }
 
   private emptyGroup(): CreateGroupInput {
-    return { name: '', description: '', city: '', imageUrl: '', interests: [] };
+    return { name: '', description: '', city: '', imageUrl: '', interests: [], plan: 'standard' };
   }
 
   private toLocalInput(date: Date): string {
@@ -599,7 +768,12 @@ export class SinglesPlansFacade {
   private errorMessage(error: unknown): string {
     if (typeof error === 'object' && error !== null && 'error' in error) {
       const body = error['error'];
-      if (typeof body === 'object' && body !== null && 'message' in body && typeof body['message'] === 'string') {
+      if (
+        typeof body === 'object' &&
+        body !== null &&
+        'message' in body &&
+        typeof body['message'] === 'string'
+      ) {
         return body['message'];
       }
     }

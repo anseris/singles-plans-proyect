@@ -1,0 +1,96 @@
+<section class="event-wizard-page">
+  <div class="event-wizard-heading">
+    <button type="button" class="wizard-back" (click)="cancel()"><i class="pi pi-arrow-left"></i> Volver</button>
+    <p class="eyebrow">{{ vm.editingId() ? 'EDITAR EXPERIENCIA' : 'NUEVA EXPERIENCIA' }}</p>
+    <h1>{{ vm.editingId() ? 'Actualiza tu evento' : 'Organiza un evento' }}</h1>
+  </div>
+
+  <div class="event-wizard-layout">
+    <ol class="event-wizard-progress" aria-label="Pasos del evento">
+      @for (label of vm.eventStepLabels; track $index) {
+        <li [class.current]="vm.eventStep() === $index + 1" [class.completed]="vm.eventStep() > $index + 1">
+          <span>{{ $index + 1 }}</span><small>{{ label }}</small>
+        </li>
+      }
+    </ol>
+
+    <form class="event-wizard-card" (ngSubmit)="vm.eventStep() === 9 ? submit() : vm.nextEventStep()">
+      @if (vm.error()) { <div class="alert error">{{ vm.error() }}</div> }
+      <label>Grupo
+        <select name="groupId" [(ngModel)]="vm.newEvent.groupId" required>
+          @for (group of vm.groups(); track group._id) {
+            <option [value]="group._id">{{ group.name }}</option>
+          }
+        </select>
+      </label>
+
+      @if (vm.eventStep() === 1) {
+        <label>Nombre del evento<input pInputText name="title" [(ngModel)]="vm.newEvent.title" maxlength="120" required /></label>
+      } @else if (vm.eventStep() === 2) {
+        <label>Zona o ciudad<input pInputText name="location" [(ngModel)]="vm.newEvent.location" maxlength="160" required /></label>
+      } @else if (vm.eventStep() === 3) {
+        <label>Punto de encuentro
+          <input pInputText name="meetingPoint" appGooglePlaceAutocomplete [googlePlacesApiKey]="vm.googleMapsApiKey"
+            [ngModel]="vm.newEvent.meetingPoint.name" (ngModelChange)="vm.setManualEventMeetingPoint($event)"
+            (placeSelected)="vm.setEventMeetingPoint($event)" (placeError)="vm.setEventPlaceError($event)" required />
+        </label>
+      } @else if (vm.eventStep() === 4) {
+        <div class="event-image-upload">
+          <input id="event-image" class="event-image-input" type="file" accept="image/jpeg,image/png,image/webp" (change)="vm.onEventImageSelected($event)" />
+          <label for="event-image" class="event-image-attach"><i class="pi pi-paperclip"></i> Adjuntar imagen</label>
+          <small>JPG, PNG o WebP · máximo 2 MB</small>
+        </div>
+        @if (vm.newEvent.imageUrl) { <img class="event-wizard-preview" [src]="vm.newEvent.imageUrl" alt="Vista previa" /> }
+      } @else if (vm.eventStep() === 5) {
+        <fieldset class="event-wizard-interests"><legend>Intereses</legend>
+          @for (interest of vm.availableGroupInterests(); track interest._id) {
+            <button type="button" [class.selected]="vm.newEvent.interests.includes(interest.name)" (click)="vm.toggleEventInterest(interest.name)">{{ interest.name }}</button>
+          }
+          @for (interest of vm.newEventInterestOptions(); track interest) {
+            <button type="button" [class.selected]="vm.newEvent.interests.includes(interest)" (click)="vm.toggleEventInterest(interest)">{{ interest }}</button>
+          }
+        </fieldset>
+        <div class="event-interest-add">
+          <label>¿Falta algún interés?<input name="eventInterestDraft" [(ngModel)]="eventInterestDraft" maxlength="40" placeholder="Ej. Fotografía" /></label>
+          <button type="button" [disabled]="!eventInterestDraft.trim()" (click)="addEventInterest()"><i class="pi pi-plus"></i> Añadir interés</button>
+        </div>
+      } @else if (vm.eventStep() === 6) {
+        <label class="event-switch">Cualquier edad<input type="checkbox" [checked]="vm.eventAnyAge()" (change)="vm.toggleEventAnyAge(!vm.eventAnyAge())" /></label>
+        @if (!vm.eventAnyAge()) {
+          <div class="event-age-fields">
+            <label>Edad mínima<input pInputText type="number" name="minAge" [(ngModel)]="vm.eventMinimumAge" /></label>
+            <label>Edad máxima<input pInputText type="number" name="maxAge" [(ngModel)]="vm.eventMaximumAge" /></label>
+          </div>
+        }
+      } @else if (vm.eventStep() === 7) {
+        <div class="event-date-fields">
+          <label>Empieza<input pInputText type="datetime-local" name="startsAt" [(ngModel)]="vm.newEvent.startsAt" /></label>
+          <label>Termina<input pInputText type="datetime-local" name="endsAt" [(ngModel)]="vm.newEvent.endsAt" /></label>
+        </div>
+      } @else if (vm.eventStep() === 8) {
+        <div class="event-date-fields">
+          <label>Plazas<input pInputText type="number" name="capacity" [(ngModel)]="vm.newEvent.capacity" /></label>
+          <label>Precio (€)<input pInputText type="number" name="price" [(ngModel)]="vm.newEvent.price" [disabled]="vm.eventIsFree()" /></label>
+        </div>
+        <label class="event-switch">Gratis<input type="checkbox" [checked]="vm.eventIsFree()" (change)="vm.toggleEventFree(!vm.eventIsFree())" /></label>
+      } @else {
+        <label>Descripción<textarea name="description" [(ngModel)]="vm.newEvent.description" rows="7" maxlength="5000" required></textarea></label>
+      }
+
+      <div class="event-wizard-actions">
+        @if (vm.eventStep() > 1) { <button type="button" class="wizard-text" (click)="vm.previousEventStep()"><i class="pi pi-arrow-left"></i> Atrás</button> }
+        @if (vm.eventStep() === 4 || vm.eventStep() === 5) { <button type="button" class="wizard-text" (click)="vm.skipEventStep()">Omitir</button> }
+        @if (vm.eventStep() < 9) { <p-button label="Continuar" icon="pi pi-arrow-right" iconPos="right" type="submit" /> }
+        @else { <p-button [label]="vm.editingId() ? 'Guardar cambios' : 'Publicar experiencia'" icon="pi pi-send" type="submit" /> }
+      </div>
+    </form>
+  </div>
+</section>
+
+<p-dialog [visible]="eventConfirmationOpen()" (visibleChange)="eventConfirmationOpen.set($event)" header="Evento enviado" [modal]="true" [draggable]="false" [resizable]="false">
+  <div class="event-confirmation">
+    <span class="event-confirmation-icon"><i class="pi pi-check"></i></span>
+    <p>{{ confirmationMessage() }}</p>
+    <p-button label="Volver a eventos" icon="pi pi-arrow-right" iconPos="right" (onClick)="backToEvents()" />
+  </div>
+</p-dialog>

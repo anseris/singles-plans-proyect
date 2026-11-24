@@ -25,6 +25,10 @@ export class EventsPage {
   readonly notice = input.required<string>();
   readonly searchTerm = input.required<string>();
   readonly adminView = input.required<boolean>();
+  readonly isSuperusuario = input(false);
+  readonly myEventsCount = input(0);
+  readonly myEvents = input<EventItem[]>([]);
+  readonly eventListView = input<'mine' | 'all'>('all');
   readonly createGroupRequested = output<void>();
   readonly loginRequested = output<void>();
   readonly groupSelected = output<GroupItem>();
@@ -37,4 +41,9 @@ export class EventsPage {
   readonly searchChanged = output<Event>();
   readonly searchCleared = output<void>();
   readonly plansRequested = output<void>();
+  readonly eventListViewSelected = output<'mine' | 'all'>();
+
+  ownsEvent(event: EventItem): boolean {
+    return this.myEvents().some((ownedEvent) => ownedEvent._id === event._id);
+  }
 }

@@ -31,7 +31,12 @@ export interface EventItem {
   group?: GroupItem | null;
   status: EventStatus;
   enrolledCount?: number;
-  createdBy?: { name: string; email: string };
+  createdBy?: { _id?: string; id?: string; name: string; email?: string };
+}
+
+export interface EventDetails extends EventItem {
+  isCreator: boolean;
+  isEnrolled: boolean;
 }
 
 export interface EventCreateInput {
