@@ -9,6 +9,33 @@ export interface AppUser {
   role: 'user' | 'admin';
   superusuario?: boolean;
   location?: string;
+  avatarUrl?: string;
+  createdAt?: string;
+  aboutMe?: string;
+  showGroups?: boolean;
+  showMaritalStatus?: boolean;
+  birthDate?: string;
+  gender?: string;
+  interests?: string[];
+  maritalStatus?: string;
+  occupation?: string;
+  contactPermission?: string;
+}
+
+export interface ProfileInput {
+  name: string;
+  location: string;
+  aboutMe: string;
+  showGroups: boolean;
+  showMaritalStatus: boolean;
+  birthDate: string;
+  gender: string;
+  interests: string[];
+  maritalStatus: string;
+  occupation: string;
+  contactPermission: string;
+  avatar?: File | null;
+  removeAvatar?: boolean;
 }
 
 export interface RegisterInput {
@@ -58,6 +85,24 @@ export class AuthService {
         : (window.SINGLESPLANS_CONFIG?.apiOrigin?.trim() ?? '').replace(/\/+$/, '');
     const origin = configuredOrigin || '';
     return `${origin}/api/auth/oauth/${provider}`;
+  }
+
+  async updateProfile(input: ProfileInput): Promise<void> {
+    const body = new FormData();
+    body.append('name', input.name);
+    body.append('location', input.location);
+    body.append('aboutMe', input.aboutMe);
+    body.append('showGroups', String(input.showGroups));
+    body.append('showMaritalStatus', String(input.showMaritalStatus));
+    body.append('birthDate', input.birthDate);
+    body.append('gender', input.gender);
+    body.append('interests', JSON.stringify(input.interests));
+    body.append('maritalStatus', input.maritalStatus);
+    body.append('occupation', input.occupation);
+    body.append('contactPermission', input.contactPermission);
+    if (input.avatar) body.append('avatar', input.avatar, input.avatar.name);
+    if (input.removeAvatar) body.append('removeAvatar', 'true');
+    this.user.set(await firstValueFrom(this.http.patch<AppUser>('/api/auth/me', body)));
   }
 
   async completeOAuth(token: string): Promise<void> {

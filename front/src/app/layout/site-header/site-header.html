@@ -17,8 +17,60 @@
           {{ adminView() ? 'Vista pública' : 'Administración' }}
         </button>
       }
-      <span class="user-greeting">Hola, {{ currentUser.name.split(' ')[0] }}</span>
-      <button class="text-button" type="button" (click)="logoutRequested.emit()">Salir</button>
+
+      <div class="user-menu">
+        <button
+          class="user-menu-trigger"
+          type="button"
+          aria-haspopup="menu"
+          [attr.aria-expanded]="menuOpen()"
+          (click)="toggleMenu()"
+        >
+          <app-user-avatar
+            [name]="currentUser.name"
+            [avatarUrl]="currentUser.avatarUrl ?? ''"
+            size="small"
+          />
+          <span class="user-menu-name">{{ currentUser.name.split(' ')[0] }}</span>
+          <i class="pi pi-chevron-down user-menu-chevron" [class.is-open]="menuOpen()"></i>
+        </button>
+
+        @if (menuOpen()) {
+          <div class="user-menu-panel" role="menu">
+            <div class="user-menu-header">
+              <strong>{{ currentUser.name }}</strong>
+              <small>{{ currentUser.email }}</small>
+            </div>
+            <a
+              class="user-menu-item"
+              role="menuitem"
+              routerLink="/cuenta/perfil"
+              (click)="closeMenu()"
+            >
+              <i class="pi pi-user"></i>
+              Ver perfil
+            </a>
+            <a
+              class="user-menu-item"
+              role="menuitem"
+              routerLink="/cuenta/configuracion"
+              (click)="closeMenu()"
+            >
+              <i class="pi pi-cog"></i>
+              Configuración
+            </a>
+            <button
+              class="user-menu-item user-menu-logout"
+              type="button"
+              role="menuitem"
+              (click)="closeMenu(); logoutRequested.emit()"
+            >
+              <i class="pi pi-sign-out"></i>
+              Salir
+            </button>
+          </div>
+        }
+      </div>
     } @else {
       <button class="text-button desktop-only" type="button" (click)="loginRequested.emit()">
         Iniciar sesión

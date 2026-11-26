@@ -20,7 +20,7 @@ API REST con Express, TypeScript y MongoDB/Mongoose.
 
 ## Endpoints principales
 
-- `POST /api/auth/register`, `POST /api/auth/login`, `GET /api/auth/me`
+- `POST /api/auth/register`, `POST /api/auth/login`, `GET /api/auth/me`, `PATCH /api/auth/me`
 - `POST /api/auth/password/forgot`, `POST /api/auth/password/reset`
 - `GET /api/groups` (público), `GET /api/groups/mine`, `GET /api/groups/interests`, `POST /api/groups/:id/join` y `POST /api/groups` (requieren sesión salvo el listado público)
 - `GET /api/interests` (catálogo público para el formulario de grupos)
@@ -62,6 +62,10 @@ Para probar el flujo sin credenciales reales, define `OAUTH_DEMO=1` en `.env` y 
 Apple no acepta `localhost` ni IP: en local expón la API con un túnel HTTPS y define `APPLE_REDIRECT_URI=https://tu-tunnel/api/auth/oauth/apple/callback`. Además, pon esa misma URL pública en `apiOrigin` de `front/public/google-maps-config.js`; así la cookie de estado se crea en el mismo dominio al que Apple vuelve. En `back/.env`, `API_ORIGIN` debe ser también esa URL pública.
 
 Puedes sobrescribir la URI de retorno de cualquier proveedor con `GOOGLE_REDIRECT_URI`, `FACEBOOK_REDIRECT_URI` o `APPLE_REDIRECT_URI`.
+
+## Perfil de usuario
+
+`GET /api/auth/me` devuelve `id`, `name`, `email`, `role`, `superusuario`, `location`, `avatarUrl`, `createdAt`, `aboutMe`, `showGroups`, `showMaritalStatus`, `birthDate` (`YYYY-MM-DD`), `gender`, `interests`, `maritalStatus`, `occupation` y `contactPermission`. `PATCH /api/auth/me` acepta `multipart/form-data` con `name`, `location`, `aboutMe`, `showGroups`, `showMaritalStatus`, `birthDate`, `gender`, `maritalStatus`, `occupation`, `contactPermission` e `interests` (array JSON, máximo 10 intereses de un catálogo cerrado), además del campo `avatar` (JPG, PNG o WebP de hasta 2 MB) o `removeAvatar=true` para borrar la imagen. Los campos opcionales ausentes conservan su valor anterior. Las opciones válidas de `gender`, `maritalStatus`, `occupation` y `contactPermission` se validan en el servidor; `birthDate` debe ser una fecha real de una persona mayor de 18 años o estar vacía. La imagen se guarda en `back/uploads/avatars/` y se sirve desde `/uploads/avatars/...`; esa carpeta está ignorada por Git. El frontend de desarrollo reenvía también `/uploads` a la API mediante `proxy.conf.json`.
 
 El registro y la recuperación de contraseña exigen un token de Cloudflare Turnstile en `captchaToken`; el inicio de sesión no lo exige. La verificación se inicia solo después de que el usuario marque la casilla «Soy humano». Configura la clave secreta con `TURNSTILE_SECRET_KEY` en `.env`; la clave del sitio va en `front/public/google-maps-config.js`. Para enviar los correos de restablecimiento con Resend, usa `SMTP_HOST=smtp.resend.com`, `SMTP_PORT=587` y `SMTP_USER=resend`; define `SMTP_PASSWORD` con la API key de Resend (`re_...`). En local puedes usar `SMTP_FROM=onboarding@resend.dev`, pero Resend solo entrega esos correos a la dirección asociada a tu cuenta; para otros destinatarios necesitas un dominio verificado. Sin SMTP configurado la API responde 503 y no genera enlaces; el enlace enviado caduca en una hora.
 

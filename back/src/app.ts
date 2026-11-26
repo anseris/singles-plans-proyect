@@ -1,3 +1,4 @@
+import { resolve } from 'node:path';
 import cors from 'cors';
 import express from 'express';
 import adminRoutes from './routes/admin.routes.js';
@@ -18,6 +19,11 @@ app.use('/api', (_req, res, next) => {
 });
 app.use(express.json({ limit: '3mb' }));
 app.use(express.urlencoded({ extended: false }));
+
+app.use(
+  '/uploads/avatars',
+  express.static(resolve(process.cwd(), 'uploads', 'avatars'), { maxAge: '1h' }),
+);
 
 app.get('/api/health', (_req, res) => res.json({ ok: true, message: 'Singles Plans API is running.' }));
 app.use('/api/auth', authRoutes);

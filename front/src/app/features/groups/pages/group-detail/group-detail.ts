@@ -7,11 +7,12 @@ import { DialogModule } from 'primeng/dialog';
 import type { GroupDetails, GroupItem } from '../../models/group.model';
 import { SinglesPlansFacade } from '../../../../core/application/singles-plans.facade';
 import { GroupsService } from '../../data-access/groups.service';
+import { UserAvatar } from '../../../../shared/components/user-avatar/user-avatar';
 import { EventCard } from '../../../events/components/event-card/event-card';
 
 @Component({
   selector: 'app-group-detail',
-  imports: [ButtonModule, DialogModule, RouterLink, EventCard],
+  imports: [ButtonModule, DialogModule, RouterLink, EventCard, UserAvatar],
   templateUrl: './group-detail.html',
   styleUrl: './group-detail.scss'
 })

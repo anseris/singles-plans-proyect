@@ -32,7 +32,7 @@ export interface EventItem {
   status: EventStatus;
   enrolledCount?: number;
   isEnrolled?: boolean;
-  createdBy?: { _id?: string; id?: string; name: string; email?: string };
+  createdBy?: { _id?: string; id?: string; name: string; email?: string; avatarUrl?: string };
 }
 
 export interface EventDetails extends EventItem {
@@ -43,6 +43,7 @@ export interface EventDetails extends EventItem {
 export interface EventAttendee {
   id: string;
   name: string;
+  avatarUrl?: string;
 }
 
 export interface EventCreateInput {

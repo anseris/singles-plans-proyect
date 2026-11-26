@@ -134,7 +134,7 @@ export async function createEvent(req: AuthenticatedRequest, res: Response, next
 
 export async function listEvents(_req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
-    const events = await Event.find().populate('createdBy', 'name email').populate('group', 'name city').sort({ createdAt: -1 }).lean();
+    const events = await Event.find().populate('createdBy', 'name email avatarUrl').populate('group', 'name city').sort({ createdAt: -1 }).lean();
     const counts = await Enrollment.aggregate([
       { $match: { event: { $in: events.map((event) => event._id) } } },
       { $group: { _id: '$event', count: { $sum: 1 } } }

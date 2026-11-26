@@ -66,7 +66,7 @@ export async function getEventDetails(req: AuthenticatedRequest, res: Response, 
     }
     const event = await Event.findById(id)
       .populate('group', 'name city imageUrl')
-      .populate('createdBy', 'name')
+      .populate('createdBy', 'name avatarUrl')
       .lean();
     if (!event) {
       res.status(404).json({ message: 'No se encontró el evento.' });
@@ -113,12 +113,14 @@ export async function listEventAttendees(req: AuthenticatedRequest, res: Respons
     }
 
     const enrollments = await Enrollment.find({ event: event._id })
-      .populate('user', 'name')
+      .populate('user', 'name avatarUrl')
       .sort({ createdAt: 1 })
       .lean();
     const attendees = enrollments.flatMap((enrollment) => {
-      const user = enrollment.user as { _id?: unknown; name?: string } | null;
-      return user ? [{ id: String(user._id), name: user.name ?? '' }] : [];
+      const user = enrollment.user as { _id?: unknown; name?: string; avatarUrl?: string } | null;
+      return user
+        ? [{ id: String(user._id), name: user.name ?? '', avatarUrl: user.avatarUrl ?? '' }]
+        : [];
     });
     res.json(attendees);
   } catch (error) {

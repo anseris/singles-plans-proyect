@@ -1,0 +1,107 @@
+<section class="profile-page">
+  <header class="profile-header">
+    <app-user-avatar
+      [name]="user()?.name ?? '?'"
+      [avatarUrl]="user()?.avatarUrl ?? ''"
+      size="large"
+    />
+    <div class="profile-heading">
+      <p class="eyebrow">Mi cuenta</p>
+      <h1>{{ user()?.name ?? 'Mi perfil' }}</h1>
+      <p class="profile-subtitle">Tus datos y tus comunidades en SinglesPlans.</p>
+    </div>
+    <a class="profile-edit-link" routerLink="/cuenta/configuracion">
+      <i class="pi pi-pencil"></i>
+      Editar perfil
+    </a>
+  </header>
+
+  @if (user(); as currentUser) {
+    <div class="profile-layout">
+      <section class="profile-column profile-data">
+        <h2>Mis datos</h2>
+        <div class="profile-details">
+          <article class="profile-row">
+            <span class="profile-icon"><i class="pi pi-user"></i></span>
+            <strong>{{ currentUser.name }}</strong>
+          </article>
+          <article class="profile-row">
+            <span class="profile-icon"><i class="pi pi-envelope"></i></span>
+            <strong>{{ currentUser.email }}</strong>
+          </article>
+          <article class="profile-row">
+            <span class="profile-icon"><i class="pi pi-map-marker"></i></span>
+            <strong>{{ currentUser.location || 'No indicada' }}</strong>
+          </article>
+          <article class="profile-row">
+            <span class="profile-icon"><i class="pi pi-calendar"></i></span>
+            <strong>{{ memberSince() ? 'Miembro desde ' + memberSince() : 'Miembro de SinglesPlans' }}</strong>
+          </article>
+        </div>
+      </section>
+
+      <section class="profile-column profile-groups">
+        <h2>Mis grupos</h2>
+        <div class="profile-group-tabs" role="tablist" aria-label="Filtrar grupos">
+          <button
+            type="button"
+            role="tab"
+            [class.active]="groupsTab() === 'mine'"
+            [attr.aria-selected]="groupsTab() === 'mine'"
+            (click)="selectTab('mine')"
+          >
+            Mis grupos
+          </button>
+          @if (showManagedTab()) {
+            <button
+              type="button"
+              role="tab"
+              [class.active]="groupsTab() === 'managed'"
+              [attr.aria-selected]="groupsTab() === 'managed'"
+              (click)="selectTab('managed')"
+            >
+              Grupos que gestiono
+            </button>
+          }
+        </div>
+
+        @if (groupsLoading()) {
+          <div class="profile-groups-state"><i class="pi pi-spin pi-spinner"></i> Cargando grupos...</div>
+        } @else if (groupsError()) {
+          <div class="alert error" role="alert">{{ groupsError() }}</div>
+        } @else if (visibleGroups().length) {
+          <ul class="profile-group-list">
+            @for (group of visibleGroups(); track group._id) {
+              <li>
+                <a [routerLink]="['/grupos', group._id]">
+                  @if (group.imageUrl) {
+                    <img class="profile-group-image" [src]="group.imageUrl" [alt]="'Imagen de ' + group.name" />
+                  } @else {
+                    <span class="profile-group-image profile-group-placeholder" aria-hidden="true">
+                      {{ groupInitial(group.name) }}
+                    </span>
+                  }
+                  <span class="profile-group-info">
+                    <strong>{{ group.name }}</strong>
+                    <small>{{ group.city || 'Comunidad online' }}</small>
+                  </span>
+                  <i class="pi pi-arrow-right"></i>
+                </a>
+              </li>
+            }
+          </ul>
+        } @else {
+          <div class="profile-groups-state">
+            <i class="pi pi-users"></i>
+            {{ groupsTab() === 'managed' ? 'Aún no gestionas ningún grupo.' : 'Aún no eres miembro de ningún grupo.' }}
+          </div>
+        }
+      </section>
+    </div>
+  } @else {
+    <div class="alert info profile-empty" role="status">
+      Inicia sesión para ver tu perfil.
+      <a routerLink="/eventos">Volver a eventos</a>
+    </div>
+  }
+</section>

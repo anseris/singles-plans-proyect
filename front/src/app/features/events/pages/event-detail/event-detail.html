@@ -60,7 +60,11 @@
       }
 
       <div class="detail-fact detail-organizer">
-        <i class="pi pi-user"></i>
+        <app-user-avatar
+          [name]="item.createdBy?.name || 'Comunidad SinglesPlans'"
+          [avatarUrl]="item.createdBy?.avatarUrl ?? ''"
+          size="small"
+        />
         <span>
           <strong>Organizador</strong>
           <small>{{ item.createdBy?.name || 'Comunidad SinglesPlans' }}</small>

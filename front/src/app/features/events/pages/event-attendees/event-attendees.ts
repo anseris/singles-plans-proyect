@@ -1,12 +1,13 @@
 import { Component, inject, signal } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
+import { UserAvatar } from '../../../../shared/components/user-avatar/user-avatar';
 import { EventsService } from '../../data-access/events.service';
 import type { EventAttendee } from '../../models/event.model';
 
 @Component({
   selector: 'app-event-attendees',
-  imports: [RouterLink],
+  imports: [RouterLink, UserAvatar],
   templateUrl: './event-attendees.html',
   styleUrl: './event-attendees.scss'
 })
@@ -39,9 +40,5 @@ export class EventAttendeesPage {
     } finally {
       this.loading.set(false);
     }
-  }
-
-  attendeeInitial(name: string): string {
-    return name.trim().charAt(0).toLocaleUpperCase('es-ES') || '?';
   }
 }

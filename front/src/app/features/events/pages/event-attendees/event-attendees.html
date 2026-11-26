@@ -17,7 +17,11 @@
     <ul class="attendee-list">
       @for (attendee of attendees(); track attendee.id) {
         <li>
-          <span class="attendee-avatar" aria-hidden="true">{{ attendeeInitial(attendee.name) }}</span>
+          <app-user-avatar
+            [name]="attendee.name || 'Usuario de SinglesPlans'"
+            [avatarUrl]="attendee.avatarUrl ?? ''"
+            size="small"
+          />
           <span class="attendee-name">{{ attendee.name || 'Usuario de SinglesPlans' }}</span>
           <i class="pi pi-check-circle" aria-label="Asistencia confirmada"></i>
         </li>

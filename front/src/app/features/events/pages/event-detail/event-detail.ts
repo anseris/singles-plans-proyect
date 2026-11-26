@@ -7,12 +7,13 @@ import { ButtonModule } from 'primeng/button';
 import { DialogModule } from 'primeng/dialog';
 import { TagModule } from 'primeng/tag';
 import { SinglesPlansFacade } from '../../../../core/application/singles-plans.facade';
+import { UserAvatar } from '../../../../shared/components/user-avatar/user-avatar';
 import { EventsService } from '../../data-access/events.service';
 import type { EventDetails } from '../../models/event.model';
 
 @Component({
   selector: 'app-event-detail',
-  imports: [RouterLink, DatePipe, CurrencyPipe, ButtonModule, DialogModule, TagModule],
+  imports: [RouterLink, DatePipe, CurrencyPipe, ButtonModule, DialogModule, TagModule, UserAvatar],
   templateUrl: './event-detail.html',
   styleUrl: './event-detail.scss',
 })

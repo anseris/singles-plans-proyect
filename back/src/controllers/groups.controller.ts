@@ -46,7 +46,7 @@ export async function getGroupDetails(req: Request, res: Response, next: NextFun
 
     const now = new Date();
     const [organizer, upcomingEvents, pastEvents, members, memberCount] = await Promise.all([
-      User.findById(group.createdBy).select('name').lean(),
+      User.findById(group.createdBy).select('name avatarUrl').lean(),
       Event.find({ group: group._id, status: 'published', endsAt: { $gte: now } })
         .populate('group', 'name city')
         .sort({ startsAt: 1 })
@@ -56,7 +56,7 @@ export async function getGroupDetails(req: Request, res: Response, next: NextFun
         .sort({ startsAt: -1 })
         .lean(),
       GroupMembership.find({ group: group._id })
-        .populate('user', 'name')
+        .populate('user', 'name avatarUrl')
         .sort({ createdAt: 1 })
         .lean(),
       GroupMembership.countDocuments({ group: group._id })
@@ -66,11 +66,14 @@ export async function getGroupDetails(req: Request, res: Response, next: NextFun
       group,
       createdById: String(group.createdBy),
       createdByName: organizer?.name ?? '',
+      createdByAvatarUrl: organizer?.avatarUrl ?? '',
       upcomingEvents,
       pastEvents,
       members: members.flatMap((membership) => {
-        const user = membership.user as { _id?: unknown; name?: string } | null;
-        return user ? [{ id: String(user._id), name: user.name ?? '' }] : [];
+        const user = membership.user as { _id?: unknown; name?: string; avatarUrl?: string } | null;
+        return user
+          ? [{ id: String(user._id), name: user.name ?? '', avatarUrl: user.avatarUrl ?? '' }]
+          : [];
       }),
       memberCount
     });

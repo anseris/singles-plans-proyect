@@ -1,0 +1,279 @@
+<section class="settings-page">
+  <div class="settings-card">
+    @if (user(); as currentUser) {
+      <form (ngSubmit)="save()">
+        <header class="settings-header">
+          <label class="avatar-edit" for="avatar-file" title="Cambiar imagen">
+            <app-user-avatar
+              [name]="currentUser.name"
+              [avatarUrl]="previewUrl()"
+              size="large"
+            />
+            <span class="avatar-edit-badge"><i class="pi pi-camera"></i></span>
+          </label>
+          <input
+            id="avatar-file"
+            class="file-input"
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            (change)="onFileSelected($event)"
+          />
+          <div class="settings-identity">
+            <p class="eyebrow">MI CUENTA</p>
+            <h1>{{ currentUser.name }}</h1>
+            <span class="role-badge"><i class="pi pi-shield"></i>{{ roleLabel() }}</span>
+          </div>
+          @if (previewUrl()) {
+            <button class="remove-avatar" type="button" (click)="removeImage()">
+              Quitar imagen
+            </button>
+          }
+        </header>
+        <small class="avatar-hint">Pulsa la imagen para cambiarla · JPG, PNG o WebP · máximo 2 MB</small>
+
+        @if (error()) {
+          <div class="alert error" role="alert">{{ error() }}</div>
+        }
+        @if (notice()) {
+          <div class="alert success" role="status">{{ notice() }}</div>
+        }
+
+        <nav class="settings-tabs" role="tablist" aria-label="Secciones de configuración">
+          <button
+            type="button"
+            role="tab"
+            [class.active]="activeTab() === 'profile'"
+            [attr.aria-selected]="activeTab() === 'profile'"
+            (click)="selectTab('profile')"
+          >
+            Perfil
+          </button>
+          <button
+            type="button"
+            role="tab"
+            [class.active]="activeTab() === 'personal'"
+            [attr.aria-selected]="activeTab() === 'personal'"
+            (click)="selectTab('personal')"
+          >
+            Información Personal
+          </button>
+          <button
+            type="button"
+            role="tab"
+            [class.active]="activeTab() === 'privacy'"
+            [attr.aria-selected]="activeTab() === 'privacy'"
+            (click)="selectTab('privacy')"
+          >
+            Privacidad
+          </button>
+        </nav>
+
+        <div class="settings-panel" role="tabpanel">
+          @switch (activeTab()) {
+            @case ('profile') {
+              <div class="settings-section-heading">
+                <h2>Perfil</h2>
+                <p>Así te ven los demás miembros de SinglesPlans.</p>
+              </div>
+              <div class="settings-grid">
+                <label class="settings-field" for="settings-name">
+                  <span>Nombre</span>
+                  <input
+                    id="settings-name"
+                    name="name"
+                    type="text"
+                    maxlength="100"
+                    autocomplete="name"
+                    [ngModel]="name()"
+                    (ngModelChange)="name.set($event)"
+                  />
+                </label>
+                <label class="settings-field" for="settings-location">
+                  <span>Ubicación</span>
+                  <input
+                    id="settings-location"
+                    name="location"
+                    type="text"
+                    maxlength="120"
+                    autocomplete="address-level2"
+                    placeholder="Tu ciudad"
+                    [ngModel]="location()"
+                    (ngModelChange)="location.set($event)"
+                  />
+                </label>
+                <label class="settings-field full" for="settings-about">
+                  <span>Sobre mí</span>
+                  <textarea
+                    id="settings-about"
+                    name="aboutMe"
+                    rows="4"
+                    maxlength="1000"
+                    placeholder="Cuéntanos algo sobre ti"
+                    [ngModel]="aboutMe()"
+                    (ngModelChange)="aboutMe.set($event)"
+                  ></textarea>
+                  <small>{{ aboutMe().length }}/1000</small>
+                </label>
+              </div>
+
+              <div class="event-switch">
+                <span>
+                  <span class="switch-label">
+                    Mostrar grupos de SinglesPlans
+                    <span
+                      class="info-icon"
+                      tabindex="0"
+                      role="img"
+                      aria-label="Todos los usuarios podrán ver tus grupos"
+                      data-tooltip="Todos los usuarios podrán ver tus grupos"
+                    >
+                      <i class="pi pi-info-circle"></i>
+                    </span>
+                  </span>
+                  <small>Controla si tus comunidades son visibles.</small>
+                </span>
+                <input
+                  type="checkbox"
+                  name="showGroups"
+                  aria-label="Mostrar grupos de SinglesPlans"
+                  [ngModel]="showGroups()"
+                  (ngModelChange)="showGroups.set($event)"
+                />
+              </div>
+
+              <div class="event-switch">
+                <span>
+                  <span class="switch-label">
+                    Mostrar estado civil
+                    <span
+                      class="info-icon"
+                      tabindex="0"
+                      role="img"
+                      aria-label="Todos los usuarios podrán ver tu estado civil"
+                      data-tooltip="Todos los usuarios podrán ver tu estado civil"
+                    >
+                      <i class="pi pi-info-circle"></i>
+                    </span>
+                  </span>
+                  <small>Controla si se muestra en tu perfil.</small>
+                </span>
+                <input
+                  type="checkbox"
+                  name="showMaritalStatus"
+                  aria-label="Mostrar estado civil"
+                  [ngModel]="showMaritalStatus()"
+                  (ngModelChange)="showMaritalStatus.set($event)"
+                />
+              </div>
+            }
+            @case ('personal') {
+              <div class="settings-section-heading">
+                <h2>Información Personal</h2>
+                <p>Estos datos nos ayudan a mostrarte planes más adecuados.</p>
+              </div>
+              <div class="settings-grid">
+                <label class="settings-field" for="settings-birthdate">
+                  <span>Fecha de nacimiento</span>
+                  <input
+                    id="settings-birthdate"
+                    name="birthDate"
+                    type="date"
+                    [max]="today"
+                    [ngModel]="birthDate()"
+                    (ngModelChange)="birthDate.set($event)"
+                  />
+                </label>
+                <label class="settings-field" for="settings-gender">
+                  <span>Género</span>
+                  <select
+                    id="settings-gender"
+                    name="gender"
+                    [ngModel]="gender()"
+                    (ngModelChange)="gender.set($event)"
+                  >
+                    @for (option of genderOptions; track option.value) {
+                      <option [value]="option.value">{{ option.label }}</option>
+                    }
+                  </select>
+                </label>
+                <div class="settings-field full">
+                  <span id="settings-interests">Intereses</span>
+                  <div class="interest-tags" aria-labelledby="settings-interests">
+                    @for (interest of interestCatalog; track interest) {
+                      <button
+                        type="button"
+                        class="interest-tag"
+                        [class.selected]="interests().includes(interest)"
+                        [attr.aria-pressed]="interests().includes(interest)"
+                        (click)="toggleInterest(interest)"
+                      >
+                        {{ interest }}
+                      </button>
+                    }
+                  </div>
+                  <small>Elige hasta 10 intereses. {{ interests().length }}/10 seleccionados.</small>
+                </div>
+                <label class="settings-field" for="settings-marital">
+                  <span>Estado civil</span>
+                  <select
+                    id="settings-marital"
+                    name="maritalStatus"
+                    [ngModel]="maritalStatus()"
+                    (ngModelChange)="maritalStatus.set($event)"
+                  >
+                    @for (option of maritalStatusOptions; track option.value) {
+                      <option [value]="option.value">{{ option.label }}</option>
+                    }
+                  </select>
+                </label>
+                <label class="settings-field" for="settings-occupation">
+                  <span>En qué trabajas</span>
+                  <select
+                    id="settings-occupation"
+                    name="occupation"
+                    [ngModel]="occupation()"
+                    (ngModelChange)="occupation.set($event)"
+                  >
+                    @for (option of occupationOptions; track option.value) {
+                      <option [value]="option.value">{{ option.label }}</option>
+                    }
+                  </select>
+                </label>
+              </div>
+            }
+            @case ('privacy') {
+              <div class="settings-section-heading">
+                <h2>Privacidad</h2>
+                <p>Decide quién puede contactarte dentro de la plataforma.</p>
+              </div>
+              <h3 class="settings-subheading">Contactos</h3>
+              <div class="settings-grid">
+                <label class="settings-field full" for="settings-contact">
+                  <span>Quien puede contactar contigo en SinglesPlans</span>
+                  <select
+                    id="settings-contact"
+                    name="contactPermission"
+                    [ngModel]="contactPermission()"
+                    (ngModelChange)="contactPermission.set($event)"
+                  >
+                    @for (option of contactOptions; track option.value) {
+                      <option [value]="option.value">{{ option.label }}</option>
+                    }
+                  </select>
+                </label>
+              </div>
+            }
+          }
+        </div>
+
+        <footer class="settings-footer">
+          <button class="settings-submit" type="submit" [disabled]="!canSave()">
+            {{ saving() ? 'Guardando…' : 'Guardar cambios' }}
+          </button>
+        </footer>
+      </form>
+    } @else {
+      <div class="alert info" role="status">Inicia sesión para cambiar tu configuración.</div>
+    }
+  </div>
+</section>

@@ -1,0 +1,14 @@
+<span
+  class="user-avatar"
+  [class.user-avatar-small]="size() === 'small'"
+  [class.user-avatar-medium]="size() === 'medium'"
+  [class.user-avatar-large]="size() === 'large'"
+  role="img"
+  [attr.aria-label]="'Avatar de ' + name()"
+>
+  @if (showImage()) {
+    <img [src]="resolvedUrl()" [alt]="'Avatar de ' + name()" (error)="onImageError()" />
+  } @else {
+    <span class="user-avatar-initial" aria-hidden="true">{{ initial() }}</span>
+  }
+</span>

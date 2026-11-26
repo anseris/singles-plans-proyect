@@ -1,0 +1,78 @@
+.profile-page { max-width: 1100px; margin: 0 auto; padding: 42px 20px 72px; }
+
+.profile-header {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 28px;
+  border: 1px solid var(--line);
+  border-radius: 22px 22px 0 0;
+  background: #fff;
+}
+
+.profile-heading h1 {
+  margin: 4px 0;
+  font: 800 clamp(24px, 4vw, 34px) Manrope, sans-serif;
+  letter-spacing: -1.2px;
+}
+
+.profile-subtitle { margin: 0; color: var(--muted); font-size: 14px; }
+
+.profile-edit-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+  padding: 10px 16px;
+  border-radius: 999px;
+  background: #edf3ee;
+  color: var(--sea);
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+
+  &:hover { background: var(--cream); color: var(--ink); }
+}
+
+.profile-layout { display: grid; grid-template-columns: minmax(280px, 0.85fr) minmax(320px, 1.15fr); gap: 0; border: 1px solid var(--line); border-top: 0; border-radius: 0 0 22px 22px; background: #fff; }
+
+.profile-column { padding: 26px 28px 30px; min-width: 0; }
+.profile-data { border-right: 1px solid var(--line); }
+.profile-column h2 { margin: 0 0 16px; font: 800 18px Manrope, sans-serif; }
+
+.profile-row { display: flex; align-items: center; gap: 13px; padding: 13px 0; border-bottom: 1px solid var(--line); }
+.profile-row:last-child { border-bottom: 0; }
+.profile-row strong { font-size: 14px; overflow-wrap: anywhere; }
+
+.profile-icon { display: grid; flex: none; place-items: center; width: 36px; height: 36px; border-radius: 12px; background: #edf3ee; color: var(--sea); }
+
+.profile-group-tabs { display: flex; gap: 6px; margin-bottom: 16px; border-bottom: 1px solid var(--line); }
+.profile-group-tabs button { padding: 9px 13px; border: 0; border-bottom: 2px solid transparent; background: transparent; color: var(--muted); cursor: pointer; font-size: 13px; font-weight: 700; }
+.profile-group-tabs button.active { border-bottom-color: var(--sea); color: var(--sea); }
+
+.profile-group-list { display: grid; gap: 10px; margin: 0; padding: 0; list-style: none; }
+.profile-group-list a { display: flex; align-items: center; gap: 12px; padding: 10px; border: 1px solid var(--line); border-radius: 14px; transition: background 0.18s, border-color 0.18s; }
+.profile-group-list a:hover { border-color: var(--mist); background: #f7f8f3; }
+
+.profile-group-image { width: 46px; height: 46px; flex: none; border-radius: 12px; object-fit: cover; }
+.profile-group-placeholder { display: grid; place-items: center; background: #e7f0ec; color: var(--sea); font: 800 18px Manrope, sans-serif; }
+.profile-group-info { display: grid; gap: 2px; min-width: 0; }
+.profile-group-info strong { font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.profile-group-info small { color: var(--muted); font-size: 12px; }
+.profile-group-list i { margin-left: auto; color: var(--sea); font-size: 11px; }
+
+.profile-groups-state { display: grid; justify-items: center; gap: 8px; padding: 30px 14px; border: 1px dashed var(--line); border-radius: 14px; color: var(--muted); font-size: 13px; text-align: center; }
+.profile-groups-state i { color: var(--sea); font-size: 22px; }
+.profile-empty a { color: var(--sea); font-weight: 700; }
+
+@media (max-width: 780px) {
+  .profile-layout { grid-template-columns: 1fr; }
+  .profile-data { border-right: 0; border-bottom: 1px solid var(--line); }
+}
+
+@media (max-width: 620px) {
+  .profile-page { padding: 24px 14px 56px; }
+  .profile-header { align-items: flex-start; flex-wrap: wrap; gap: 14px; padding: 20px 18px; }
+  .profile-edit-link { margin-left: 0; }
+  .profile-column { padding: 22px 18px; }
+}

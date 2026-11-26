@@ -31,12 +31,14 @@ export interface PlanSettings {
 export interface GroupMember {
   id: string;
   name: string;
+  avatarUrl?: string;
 }
 
 export interface GroupDetails {
   group: GroupItem;
   createdById: string;
   createdByName: string;
+  createdByAvatarUrl?: string;
   upcomingEvents: EventItem[];
   pastEvents: EventItem[];
   members: GroupMember[];

@@ -32,8 +32,12 @@
         <h1>{{ currentGroup.name }}</h1>
         @if (details(); as groupDetails) {
           <div class="group-detail-meta">
-            <span>
-              <i class="pi pi-user"></i>
+            <span class="group-organizer">
+              <app-user-avatar
+                [name]="groupDetails.createdByName || 'Organizador de SinglesPlans'"
+                [avatarUrl]="groupDetails.createdByAvatarUrl ?? ''"
+                size="small"
+              />
               {{ groupDetails.createdByName || 'Organizador de SinglesPlans' }}
             </span>
             <span><i class="pi pi-map-marker"></i>{{ currentGroup.city || 'Comunidad online' }}</span>
@@ -227,9 +231,11 @@
             <ul class="group-member-list">
               @for (member of groupDetails.members; track member.id) {
                 <li>
-                  <span class="group-member-avatar">
-                    {{ member.name.trim().charAt(0).toLocaleUpperCase('es-ES') || '?' }}
-                  </span>
+                  <app-user-avatar
+                    [name]="member.name || 'Usuario de SinglesPlans'"
+                    [avatarUrl]="member.avatarUrl ?? ''"
+                    size="small"
+                  />
                   <span>{{ member.name }}</span>
                 </li>
               }
