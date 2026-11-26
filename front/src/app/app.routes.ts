@@ -8,6 +8,7 @@ import { GroupCreatePage } from './features/groups/pages/group-create/group-crea
 import { GroupDetail } from './features/groups/pages/group-detail/group-detail';
 import { AllGroupsPage } from './features/groups/pages/all-groups/all-groups';
 import { AdminPage } from './features/admin/pages/admin-page/admin-page';
+import { ResetPassword } from './features/account/pages/reset-password/reset-password';
 
 export const routes: Routes = [
   { path: '', pathMatch: 'full', redirectTo: 'eventos' },
@@ -21,5 +22,6 @@ export const routes: Routes = [
   { path: 'grupos/todos', component: AllGroupsPage },
   { path: 'grupos/:id', component: GroupDetail },
   { path: 'administracion', component: AdminPage },
+  { path: 'cuenta/restablecer', component: ResetPassword },
   { path: '**', redirectTo: 'eventos' },
 ];

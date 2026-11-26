@@ -23,6 +23,10 @@ La configuración local de Angular reenvía `/api` a `http://localhost:3000` med
 
 En `public/google-maps-config.js`, configura `googleMapsApiKey` con una clave de navegador de Google Maps Platform. Habilita Maps JavaScript API y Places API (New), configura facturación y restringe la clave por los dominios de la aplicación (HTTP referrers). La clave del navegador se entrega al cliente: no la reutilices como clave privada de servidor. Sin clave, el formulario permite introducir el lugar manualmente y crea un enlace de búsqueda en Google Maps. Con la clave configurada, las sugerencias se pueden seleccionar con ratón o teclado y rellenan el mismo campo de búsqueda.
 
+### Autenticación
+
+El registro y la recuperación usan Cloudflare Turnstile: la clave pública del sitio se configura en `public/google-maps-config.js` como `turnstileSiteKey`. La verificación no se ejecuta automáticamente: el usuario debe marcar la casilla «Soy humano» para iniciarla. El inicio de sesión no muestra captcha. La clave secreta nunca se envía al cliente; vive únicamente en `back/.env` como `TURNSTILE_SECRET_KEY`. “Mantenerme conectado” conserva la sesión en `localStorage`. La recuperación envía el enlace al correo indicado; al abrirlo se accede a `/cuenta/restablecer` con el token ya aplicado, se elige la nueva contraseña y la aplicación redirige a `/eventos` con la sesión iniciada. Sin SMTP configurado en la API, el formulario devuelve un error en lugar de enviar el correo.
+
 ## Organización del código
 
 - `core/`: autenticación y fachada de estado/acciones de la aplicación.

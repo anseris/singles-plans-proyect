@@ -1,0 +1,5 @@
+.turnstile-widget { display: grid; justify-items: start; gap: 5px; }
+.turnstile-check-row { display: flex; align-items: center; gap: 8px; }
+.turnstile-check-label { color: var(--ink); font-size: 11px; font-weight: 700; cursor: pointer; }
+.turnstile-hidden { display: none; }
+.turnstile-widget p:not(.turnstile-label) { margin: 0; color: #8d3939; font-size: 11px; }

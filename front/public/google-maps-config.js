@@ -1,3 +1,4 @@
 window.SINGLESPLANS_CONFIG = {
-  googleMapsApiKey: ''
+  googleMapsApiKey: '',
+  turnstileSiteKey: '0x4AAAAAAGSJDihoPSDRpAAW'
 };

@@ -38,6 +38,28 @@ export interface GoogleMapsApi {
 declare global {
   interface Window {
     google?: { maps?: GoogleMapsApi };
-    SINGLESPLANS_CONFIG?: { googleMapsApiKey?: string };
+    turnstile?: {
+      render(
+        container: HTMLElement,
+        options: {
+          sitekey: string;
+          callback: (token: string) => void;
+          'expired-callback': () => void;
+          'error-callback': () => void;
+          theme?: 'light' | 'dark' | 'auto';
+          appearance?: 'always' | 'execute' | 'interaction-only';
+          execution?: 'render' | 'execute';
+          retry?: 'auto' | 'never';
+          'refresh-expired'?: 'auto' | 'manual' | 'never';
+        },
+      ): string;
+      execute(widgetId?: string): void;
+      reset(widgetId?: string): void;
+      remove(widgetId: string): void;
+    };
+    SINGLESPLANS_CONFIG?: {
+      googleMapsApiKey?: string;
+      turnstileSiteKey?: string;
+    };
   }
 }

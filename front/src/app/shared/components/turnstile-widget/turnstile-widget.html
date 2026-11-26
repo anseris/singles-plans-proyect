@@ -1,0 +1,16 @@
+<div class="turnstile-widget">
+  <div class="turnstile-check-row">
+    <p-checkbox
+      name="turnstileHuman"
+      inputId="turnstile-human"
+      [ngModel]="confirmed()"
+      (ngModelChange)="onHumanChecked($event)"
+      [binary]="true"
+    />
+    <label for="turnstile-human" class="turnstile-check-label">Soy humano</label>
+  </div>
+  <div #widget [class.turnstile-hidden]="!confirmed()"></div>
+  @if (error()) {
+    <p role="alert">{{ error() }}</p>
+  }
+</div>

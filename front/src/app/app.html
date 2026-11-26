@@ -15,19 +15,331 @@
 
 <app-site-footer />
 
-<p-dialog [visible]="vm.dialogOpen()" (visibleChange)="vm.dialogOpen.set($event)" [header]="vm.authMode() === 'login' ? 'Qué bueno verte' : 'Únete a SinglesPlans'" [modal]="true" [draggable]="false" [resizable]="false" styleClass="auth-dialog">
-  <p class="dialog-subtitle">{{ vm.authMode() === 'login' ? 'Inicia sesión y encuentra tu próximo plan.' : 'Crea tu cuenta y empieza a descubrir.' }}</p>
-  @if (vm.error()) { <div class="alert error dialog-alert">{{ vm.error() }}</div> }
-  <form class="auth-form" (ngSubmit)="vm.submitAuth()">
-    @if (vm.authMode() === 'register') {
-      <label>Nombre<input pInputText name="name" [(ngModel)]="vm.credentials.name" autocomplete="name" required /></label>
-    }
-    <label>Email<input pInputText name="email" type="email" [(ngModel)]="vm.credentials.email" autocomplete="email" required /></label>
-    <label>Contraseña<input pInputText name="password" type="password" [(ngModel)]="vm.credentials.password" [attr.minlength]="vm.authMode() === 'register' ? 8 : null" autocomplete="current-password" required /></label>
-    <p-button [label]="vm.authMode() === 'login' ? 'Iniciar sesión' : 'Crear mi cuenta'" icon="pi pi-arrow-right" type="submit" styleClass="w-full" />
-  </form>
-  <p class="auth-switch">
-    {{ vm.authMode() === 'login' ? '¿Aún no tienes cuenta?' : '¿Ya tienes una cuenta?' }}
-    <button type="button" (click)="vm.openAuth(vm.authMode() === 'login' ? 'register' : 'login')">{{ vm.authMode() === 'login' ? 'Regístrate' : 'Inicia sesión' }}</button>
-  </p>
+<p-dialog
+  [visible]="vm.dialogOpen()"
+  (visibleChange)="vm.dialogOpen.set($event)"
+  [header]="vm.authStep() === 'login' ? 'Qué bueno verte' : vm.authStep() === 'forgot-password' ? 'Restablecer contraseña' : 'Únete a SinglesPlans'"
+  [modal]="true"
+  [draggable]="false"
+  [resizable]="false"
+  [dismissableMask]="true"
+  styleClass="auth-dialog"
+>
+  @if (vm.error()) {
+    <div class="alert error dialog-alert" role="alert">{{ vm.error() }}</div>
+  }
+  @if (vm.notice()) {
+    <div class="alert success dialog-alert" role="status">{{ vm.notice() }}</div>
+  }
+  @if (vm.info()) {
+    <div class="alert info dialog-alert" role="status">{{ vm.info() }}</div>
+  }
+
+  @if (vm.authStep() === 'login') {
+    <p class="dialog-subtitle">Inicia sesión y encuentra tu próximo plan.</p>
+
+    <div class="auth-social">
+      <p-button
+        label="Inicia sesión con Google"
+        icon="pi pi-google"
+        styleClass="auth-social-btn auth-social-google"
+        (onClick)="vm.socialLogin('google')"
+      />
+      <p-button
+        label="Inicia sesión con Apple"
+        icon="pi pi-apple"
+        styleClass="auth-social-btn auth-social-apple"
+        (onClick)="vm.socialLogin('apple')"
+      />
+      <p-button
+        label="Inicia sesión con Facebook"
+        icon="pi pi-facebook"
+        styleClass="auth-social-btn auth-social-facebook"
+        (onClick)="vm.socialLogin('facebook')"
+      />
+    </div>
+
+    <div class="auth-divider"><span>o</span></div>
+
+    <form class="auth-form" (ngSubmit)="submitAuth()" novalidate>
+      <label class="auth-field" for="login-email">
+        <span>Email</span>
+        <input
+          id="login-email"
+          pInputText
+          name="loginEmail"
+          type="email"
+          [ngModel]="vm.loginForm().email"
+          (ngModelChange)="vm.setLoginField('email', $event)"
+          (blur)="vm.markLoginTouched('email')"
+          autocomplete="email"
+          placeholder="tu@email.com"
+        />
+        @if (vm.loginFieldError('email')) {
+          <small class="field-error">{{ vm.loginFieldError('email') }}</small>
+        }
+      </label>
+
+      <label class="auth-field" for="login-password">
+        <span>Contraseña</span>
+        <p-password
+          inputId="login-password"
+          name="loginPassword"
+          [ngModel]="vm.loginForm().password"
+          (ngModelChange)="vm.setLoginField('password', $event)"
+          (onBlur)="vm.markLoginTouched('password')"
+          [toggleMask]="true"
+          [feedback]="false"
+          autocomplete="current-password"
+          placeholder="Tu contraseña"
+        />
+        @if (vm.loginFieldError('password')) {
+          <small class="field-error">{{ vm.loginFieldError('password') }}</small>
+        }
+      </label>
+
+      <div class="auth-check-row">
+        <p-checkbox
+          name="rememberMe"
+          inputId="remember-me"
+          [ngModel]="vm.loginForm().rememberMe"
+          (ngModelChange)="vm.setRememberMe($event)"
+          [binary]="true"
+        />
+        <label for="remember-me" class="auth-check-label">Mantenerme conectado</label>
+      </div>
+
+      <p-button
+        type="submit"
+        label="Iniciar sesión"
+        icon="pi pi-arrow-right"
+        iconPos="right"
+        styleClass="auth-submit"
+        [loading]="vm.authSubmitting()"
+        [disabled]="!vm.loginFormValid() || vm.authSubmitting()"
+      />
+    </form>
+
+    <div class="auth-links">
+      <button type="button" (click)="vm.forgotPassword()">¿Olvidaste tu contraseña?</button>
+      <button type="button" (click)="vm.getHelp()">¿Problemas para iniciar sesión? Obtener ayuda</button>
+    </div>
+
+    <p class="auth-switch">
+      ¿Aún no tienes una cuenta?
+      <button type="button" (click)="vm.openAuth('register')">Regístrate</button>
+    </p>
+  }
+
+  @if (vm.authStep() === 'register-choice') {
+    <p class="dialog-subtitle">Crea tu cuenta y empieza a descubrir.</p>
+
+    <div class="auth-social">
+      <p-button
+        label="Seguir con Google"
+        icon="pi pi-google"
+        styleClass="auth-social-btn auth-social-google"
+        (onClick)="vm.socialLogin('google')"
+      />
+      <p-button
+        label="Seguir con Apple"
+        icon="pi pi-apple"
+        styleClass="auth-social-btn auth-social-apple"
+        (onClick)="vm.socialLogin('apple')"
+      />
+      <p-button
+        label="Seguir con Facebook"
+        icon="pi pi-facebook"
+        styleClass="auth-social-btn auth-social-facebook"
+        (onClick)="vm.socialLogin('facebook')"
+      />
+    </div>
+
+    <div class="auth-divider"><span>o</span></div>
+
+    <p-button
+      label="Regístrate con correo electrónico"
+      icon="pi pi-envelope"
+      styleClass="auth-submit"
+      (onClick)="vm.goToRegisterForm()"
+    />
+
+    <p class="auth-switch">
+      ¿Ya tienes una cuenta?
+      <button type="button" (click)="vm.openAuth('login')">Inicia sesión</button>
+    </p>
+  }
+
+  @if (vm.authStep() === 'register-form') {
+    <p class="dialog-subtitle">Crea tu cuenta y empieza a descubrir.</p>
+
+    <form class="auth-form" (ngSubmit)="submitAuth()" novalidate>
+      <label class="auth-field" for="register-name">
+        <span>Nombre</span>
+        <input
+          id="register-name"
+          pInputText
+          name="registerName"
+          [ngModel]="vm.registerForm().name"
+          (ngModelChange)="vm.setRegisterField('name', $event)"
+          (blur)="vm.markRegisterTouched('name')"
+          autocomplete="name"
+          placeholder="Tu nombre"
+        />
+        @if (vm.registerFieldError('name')) {
+          <small class="field-error">{{ vm.registerFieldError('name') }}</small>
+        }
+      </label>
+
+      <label class="auth-field" for="register-email">
+        <span>Email</span>
+        <input
+          id="register-email"
+          pInputText
+          name="registerEmail"
+          type="email"
+          [ngModel]="vm.registerForm().email"
+          (ngModelChange)="vm.setRegisterField('email', $event)"
+          (blur)="vm.markRegisterTouched('email')"
+          autocomplete="email"
+          placeholder="tu@email.com"
+        />
+        @if (vm.registerFieldError('email')) {
+          <small class="field-error">{{ vm.registerFieldError('email') }}</small>
+        }
+      </label>
+
+      <label class="auth-field" for="register-password">
+        <span>Contraseña</span>
+        <p-password
+          inputId="register-password"
+          name="registerPassword"
+          [ngModel]="vm.registerForm().password"
+          (ngModelChange)="vm.setRegisterField('password', $event)"
+          (onBlur)="vm.markRegisterTouched('password')"
+          [toggleMask]="true"
+          [feedback]="false"
+          autocomplete="new-password"
+          placeholder="Mínimo 8 caracteres"
+        />
+        @if (vm.registerFieldError('password')) {
+          <small class="field-error">{{ vm.registerFieldError('password') }}</small>
+        }
+      </label>
+
+      <label class="auth-field" for="register-confirm-password">
+        <span>Repita contraseña</span>
+        <p-password
+          inputId="register-confirm-password"
+          name="registerConfirmPassword"
+          [ngModel]="vm.registerForm().confirmPassword"
+          (ngModelChange)="vm.setRegisterField('confirmPassword', $event)"
+          (onBlur)="vm.markRegisterTouched('confirmPassword')"
+          [toggleMask]="true"
+          [feedback]="false"
+          autocomplete="new-password"
+          placeholder="Repite tu contraseña"
+        />
+        @if (vm.registerFieldError('confirmPassword')) {
+          <small class="field-error">{{ vm.registerFieldError('confirmPassword') }}</small>
+        }
+      </label>
+
+      <label class="auth-field" for="register-location">
+        <span>Ubicación</span>
+        <input
+          id="register-location"
+          pInputText
+          name="registerLocation"
+          [ngModel]="vm.registerForm().location"
+          (ngModelChange)="vm.setRegisterField('location', $event)"
+          (blur)="vm.markRegisterTouched('location')"
+          autocomplete="address-level2"
+          placeholder="Ciudad o zona"
+        />
+        @if (vm.registerFieldError('location')) {
+          <small class="field-error">{{ vm.registerFieldError('location') }}</small>
+        }
+      </label>
+
+      <div class="auth-check-group">
+        <div class="auth-check-row">
+          <p-checkbox
+            name="adultConfirmed"
+            inputId="register-adult"
+            [ngModel]="vm.registerForm().adult"
+            (ngModelChange)="vm.setAdultConfirmed($event)"
+            (onBlur)="vm.markRegisterTouched('adult')"
+            [binary]="true"
+          />
+          <label for="register-adult" class="auth-check-label">Tengo 18 años o más</label>
+        </div>
+        @if (vm.registerFieldError('adult')) {
+          <small class="field-error">{{ vm.registerFieldError('adult') }}</small>
+        }
+      </div>
+
+      <app-turnstile-widget (tokenChanged)="vm.setCaptchaToken($event)" />
+
+      <p-button
+        type="submit"
+        label="Registrarse"
+        icon="pi pi-arrow-right"
+        iconPos="right"
+        styleClass="auth-submit"
+        [loading]="vm.authSubmitting()"
+        [disabled]="!vm.registerFormValid() || vm.authSubmitting()"
+      />
+    </form>
+
+    <p class="auth-switch">
+      ¿Ya tienes una cuenta?
+      <button type="button" (click)="vm.openAuth('login')">Inicia sesión</button>
+    </p>
+
+    <p class="auth-legal">
+      Al registrarte, aceptas las
+      <a href="#" class="auth-legal-link">Condiciones del servicio</a>,
+      la <a href="#" class="auth-legal-link">Política de privacidad</a>
+      y la <a href="#" class="auth-legal-link">Política de cookies</a>.
+    </p>
+  }
+
+  @if (vm.authStep() === 'forgot-password') {
+    <p class="dialog-subtitle">
+      Escribe tu correo electrónico y te enviaremos las instrucciones para restablecer la contraseña.
+    </p>
+
+    <form class="auth-form" (ngSubmit)="requestPasswordReset()" novalidate>
+      <label class="auth-field" for="forgot-email">
+        <span>Email</span>
+        <input
+          id="forgot-email"
+          pInputText
+          name="forgotEmail"
+          type="email"
+          [ngModel]="vm.forgotEmail()"
+          (ngModelChange)="vm.forgotEmail.set($event)"
+          autocomplete="email"
+          placeholder="tu@email.com"
+        />
+      </label>
+
+      <app-turnstile-widget (tokenChanged)="vm.setCaptchaToken($event)" />
+
+      <p-button
+        type="submit"
+        label="Enviar instrucciones"
+        icon="pi pi-envelope"
+        styleClass="auth-submit"
+        [loading]="vm.authSubmitting()"
+        [disabled]="!vm.isValidEmail(vm.forgotEmail()) || !vm.captchaToken() || vm.authSubmitting()"
+      />
+    </form>
+
+    <p class="auth-switch">
+      ¿Ya tienes una cuenta?
+      <button type="button" (click)="vm.openAuth('login')">Inicia sesión</button>
+    </p>
+  }
 </p-dialog>

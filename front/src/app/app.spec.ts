@@ -1,5 +1,6 @@
 import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
 import { of } from 'rxjs';
 import { providePrimeNG } from 'primeng/config';
 import Aura from '@primeuix/themes/aura';
@@ -12,17 +13,34 @@ describe('App', () => {
   let requestedSection: 'events' | 'trips' | null;
   let currentUser: ReturnType<typeof signal<AppUser | null>>;
   let joinedGroupId: string | null;
+  let resetRequest: { email: string; captchaToken: string } | null;
+  let resetResponse: { message: string };
+  let loginRequest: {
+    email: string;
+    password: string;
+    rememberMe: boolean;
+  } | null;
 
   beforeEach(async () => {
     requestedSection = null;
     joinedGroupId = null;
+    resetRequest = null;
+    resetResponse = { message: 'Si existe una cuenta con ese email, recibirás instrucciones.' };
+    loginRequest = null;
     currentUser = signal<AppUser | null>(null);
     const auth = {
       user: currentUser,
       restoreSession: async () => {},
-      login: async () => {},
+      login: async (email: string, password: string, rememberMe: boolean) => {
+        loginRequest = { email, password, rememberMe };
+      },
       register: async () => {},
-      logout: () => {}
+      logout: () => {},
+      requestPasswordReset: async (email: string, captchaToken: string) => {
+        resetRequest = { email, captchaToken };
+        return resetResponse;
+      },
+      resetPassword: async () => ({ message: 'Contraseña actualizada.' })
     };
     const events = {
       publicEvents: (section: 'events' | 'trips') => {
@@ -62,7 +80,8 @@ describe('App', () => {
           createGroup: () => of({}),
           createInterest: (name: string) => of({ _id: 'interest-new', name })
         } },
-        providePrimeNG({ theme: { preset: Aura } })
+        providePrimeNG({ theme: { preset: Aura } }),
+        provideRouter([])
       ]
     }).compileComponents();
   });
@@ -537,4 +556,97 @@ describe('App', () => {
     fixture.detectChanges();
     expect(fixture.nativeElement.querySelector('.community-groups [role="status"]')?.textContent).toContain('Grupo público');
   });
+
+  it('shows the login form with all the requested authentication options', () => {
+    const fixture = TestBed.createComponent(App);
+    const app = fixture.componentInstance.vm;
+
+    app.openAuth('login');
+    fixture.detectChanges();
+
+    expect(app.authStep()).toBe('login');
+    expect(app.dialogOpen()).toBe(true);
+    expect(app.loginFormValid()).toBe(false);
+    expect(app.loginFieldError('email')).toBe('');
+    app.markLoginTouched('email');
+    expect(app.loginFieldError('email')).toBe('Escribe tu correo electrónico.');
+
+    app.setLoginField('email', 'ana@example.com');
+    app.setLoginField('password', 'contraseña');
+    expect(app.loginFormValid()).toBe(true);
+  });
+
+  it('shows the provider choice before the email registration form', () => {
+    const fixture = TestBed.createComponent(App);
+    const app = fixture.componentInstance.vm;
+
+    app.openAuth('register');
+    expect(app.authStep()).toBe('register-choice');
+
+    app.goToRegisterForm();
+    expect(app.authStep()).toBe('register-form');
+    expect(app.registerFormValid()).toBe(false);
+  });
+
+  it('keeps registration disabled until every field is valid', () => {
+    const fixture = TestBed.createComponent(App);
+    const app = fixture.componentInstance.vm;
+
+    app.openAuth('register');
+    app.goToRegisterForm();
+    app.setRegisterField('name', 'Ana');
+    app.setRegisterField('email', 'ana@example.com');
+    app.setRegisterField('password', 'contraseña-segura');
+    app.setRegisterField('confirmPassword', 'contraseña-segura');
+    app.setRegisterField('location', 'Madrid');
+    expect(app.registerFormValid()).toBe(false);
+
+    app.setAdultConfirmed(true);
+    expect(app.registerFormValid()).toBe(false);
+
+    app.setCaptchaToken('test-token');
+    expect(app.registerFormValid()).toBe(true);
+
+    app.setRegisterField('confirmPassword', 'otra-contraseña');
+    expect(app.registerFormValid()).toBe(false);
+  });
+
+  it('logs in without a Turnstile token', async () => {
+    const fixture = TestBed.createComponent(App);
+    const app = fixture.componentInstance.vm;
+
+    app.openAuth('login');
+    app.setLoginField('email', 'ana@example.com');
+    app.setLoginField('password', 'contraseña');
+    await app.submitAuth();
+
+    expect(loginRequest).toEqual({
+      email: 'ana@example.com',
+      password: 'contraseña',
+      rememberMe: false
+    });
+    expect(app.dialogOpen()).toBe(false);
+  });
+
+  it('sends the Turnstile token when requesting password instructions', async () => {
+    const fixture = TestBed.createComponent(App);
+    const app = fixture.componentInstance.vm;
+
+    app.openAuth('login');
+    app.forgotPassword();
+    app.forgotEmail.set('ana@example.com');
+    await app.requestPasswordReset();
+    expect(app.error()).toContain('Soy humano');
+    expect(resetRequest).toBeNull();
+
+    app.setCaptchaToken('turnstile-token');
+    await app.requestPasswordReset();
+
+    expect(resetRequest).toEqual({
+      email: 'ana@example.com',
+      captchaToken: 'turnstile-token'
+    });
+    expect(app.notice()).toContain('instrucciones');
+  });
+
 });

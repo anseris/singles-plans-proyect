@@ -21,6 +21,7 @@ API REST con Express, TypeScript y MongoDB/Mongoose.
 ## Endpoints principales
 
 - `POST /api/auth/register`, `POST /api/auth/login`, `GET /api/auth/me`
+- `POST /api/auth/password/forgot`, `POST /api/auth/password/reset`
 - `GET /api/groups` (público), `GET /api/groups/mine`, `GET /api/groups/interests`, `POST /api/groups/:id/join` y `POST /api/groups` (requieren sesión salvo el listado público)
 - `GET /api/interests` (catálogo público para el formulario de grupos)
 - `GET /api/events?section=events|trips`, `GET /api/events/mine`, `POST /api/events`, `POST /api/events/:id/enroll`
@@ -28,6 +29,8 @@ API REST con Express, TypeScript y MongoDB/Mongoose.
 - `GET /api/admin/interests`, `POST /api/admin/interests`
 - `GET /api/admin/events`, `POST /api/admin/events`, `PATCH /api/admin/events/:id`, `DELETE /api/admin/events/:id`
 - `GET /api/health`
+
+El registro y la recuperación de contraseña exigen un token de Cloudflare Turnstile en `captchaToken`; el inicio de sesión no lo exige. La verificación se inicia solo después de que el usuario marque la casilla «Soy humano». Configura la clave secreta con `TURNSTILE_SECRET_KEY` en `.env`; la clave del sitio va en `front/public/google-maps-config.js`. Para enviar los correos de restablecimiento con Resend, usa `SMTP_HOST=smtp.resend.com`, `SMTP_PORT=587` y `SMTP_USER=resend`; define `SMTP_PASSWORD` con la API key de Resend (`re_...`). En local puedes usar `SMTP_FROM=onboarding@resend.dev`, pero Resend solo entrega esos correos a la dirección asociada a tu cuenta; para otros destinatarios necesitas un dominio verificado. Sin SMTP configurado la API responde 503 y no genera enlaces; el enlace enviado caduca en una hora.
 
 Las vistas públicas de eventos (`section=events`) y viajes (`section=trips`) solo devuelven planes publicados; la segunda incluye viajes y excursiones. Los usuarios registrados pueden crear grupos y proponer eventos sociales (`type: "event"`) dentro de sus propios grupos; estas propuestas quedan pendientes de aprobación. Solo las rutas administrativas permiten crear viajes y excursiones (`type: "trip"` o `"excursion"`). Los eventos guardan la zona o ciudad y el punto de encuentro (nombre, dirección, ID y coordenadas de Google Places), intereses, edad mínima/máxima (o `null` para cualquier edad a partir de 18), franja horaria, fechas, aforo y precio. Los usuarios pueden reservar plazas iniciando sesión. El script `seed:admin` puede promover una cuenta existente sin cambiar su contraseña.
 

@@ -17,6 +17,31 @@ import type {
   PlanSettings,
 } from '../../features/groups/models/group.model';
 
+export type AuthStep = 'login' | 'register-choice' | 'register-form' | 'forgot-password';
+
+interface LoginFormState {
+  email: string;
+  password: string;
+  rememberMe: boolean;
+}
+
+interface RegisterFormState {
+  name: string;
+  email: string;
+  password: string;
+  confirmPassword: string;
+  location: string;
+  adult: boolean;
+}
+
+function emptyLoginForm(): LoginFormState {
+  return { email: '', password: '', rememberMe: false };
+}
+
+function emptyRegisterForm(): RegisterFormState {
+  return { name: '', email: '', password: '', confirmPassword: '', location: '', adult: false };
+}
+
 function isUpcomingPublished(event: EventItem): boolean {
   return event.status === 'published' && new Date(event.startsAt).getTime() >= Date.now();
 }
@@ -67,6 +92,7 @@ export class SinglesPlansFacade {
   readonly loading = signal(true);
   readonly error = signal('');
   readonly notice = signal('');
+  readonly info = signal('');
   readonly groupJoinNotice = signal('');
   readonly unenrollingEventId = signal<string | null>(null);
   readonly dialogOpen = signal(false);
@@ -75,6 +101,40 @@ export class SinglesPlansFacade {
   readonly selectedGroup = signal<GroupItem | null>(null);
   readonly editingId = signal<string | null>(null);
   readonly authMode = signal<'login' | 'register'>('login');
+  readonly authStep = signal<AuthStep>('login');
+  readonly loginForm = signal<LoginFormState>(emptyLoginForm());
+  readonly registerForm = signal<RegisterFormState>(emptyRegisterForm());
+  readonly captchaToken = signal('');
+  readonly authSubmitting = signal(false);
+  readonly forgotEmail = signal('');
+  readonly loginTouched = signal<{ email: boolean; password: boolean }>({ email: false, password: false });
+  readonly registerTouched = signal<Record<keyof RegisterFormState, boolean>>({
+    name: false,
+    email: false,
+    password: false,
+    confirmPassword: false,
+    location: false,
+    adult: false,
+  });
+  readonly isValidEmail = (value: string): boolean =>
+    /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
+  readonly loginFormValid = computed(() => {
+    const form = this.loginForm();
+    return this.isValidEmail(form.email) && form.password.trim().length > 0;
+  });
+  readonly registerFormValid = computed(() => {
+    const form = this.registerForm();
+    return (
+      form.name.trim().length >= 2 &&
+      this.isValidEmail(form.email) &&
+      form.password.length >= 8 &&
+      form.password.length <= 72 &&
+      form.password === form.confirmPassword &&
+      form.location.trim().length >= 2 &&
+      form.adult &&
+      !!this.captchaToken()
+    );
+  });
   readonly adminView = signal(false);
   readonly activeSection = signal<'events' | 'trips'>('events');
   readonly searchTerm = signal('');
@@ -96,7 +156,6 @@ export class SinglesPlansFacade {
     });
   });
 
-  credentials = { name: '', email: '', password: '' };
   newEvent: EventCreateInput = this.emptyEvent();
   readonly eventStepLabels = [
     'Nombre',
@@ -205,18 +264,195 @@ export class SinglesPlansFacade {
 
   openAuth(mode: 'login' | 'register'): void {
     this.authMode.set(mode);
-    this.credentials = { name: '', email: '', password: '' };
+    this.authStep.set(mode === 'login' ? 'login' : 'register-choice');
+    this.loginForm.set(emptyLoginForm());
+    this.registerForm.set(emptyRegisterForm());
+    this.loginTouched.set({ email: false, password: false });
+    this.registerTouched.set({
+      name: false,
+      email: false,
+      password: false,
+      confirmPassword: false,
+      location: false,
+      adult: false,
+    });
+    this.captchaToken.set('');
+    this.forgotEmail.set('');
     this.error.set('');
+    this.notice.set('');
+    this.info.set('');
     this.dialogOpen.set(true);
   }
 
-  async submitAuth(): Promise<void> {
+  goToRegisterForm(): void {
+    this.authStep.set('register-form');
+    this.captchaToken.set('');
     this.error.set('');
+    this.notice.set('');
+    this.info.set('');
+  }
+
+  setCaptchaToken(token: string): void {
+    this.captchaToken.set(token);
+    if (token) this.error.set('');
+  }
+
+  setLoginField(field: 'email' | 'password', value: string): void {
+    this.loginForm.update((form) => ({ ...form, [field]: value }));
+  }
+
+  setRememberMe(value: boolean): void {
+    this.loginForm.update((form) => ({ ...form, rememberMe: value }));
+  }
+
+  setRegisterField(
+    field: 'name' | 'email' | 'password' | 'confirmPassword' | 'location',
+    value: string,
+  ): void {
+    this.registerForm.update((form) => ({ ...form, [field]: value }));
+  }
+
+  setAdultConfirmed(value: boolean): void {
+    this.registerForm.update((form) => ({ ...form, adult: value }));
+    this.registerTouched.update((touched) => ({ ...touched, adult: true }));
+  }
+
+  markLoginTouched(field: 'email' | 'password'): void {
+    this.loginTouched.update((touched) => ({ ...touched, [field]: true }));
+  }
+
+  markRegisterTouched(field: keyof RegisterFormState): void {
+    this.registerTouched.update((touched) => ({ ...touched, [field]: true }));
+  }
+
+  loginFieldError(field: 'email' | 'password'): string {
+    if (!this.loginTouched()[field]) return '';
+    const value = this.loginForm()[field].trim();
+    if (!value) return field === 'email' ? 'Escribe tu correo electrónico.' : 'Escribe tu contraseña.';
+    return field === 'email' && !this.isValidEmail(value)
+      ? 'Introduce un correo electrónico válido.'
+      : '';
+  }
+
+  registerFieldError(field: keyof RegisterFormState): string {
+    if (!this.registerTouched()[field]) return '';
+    const form = this.registerForm();
+    if (field === 'adult') return form.adult ? '' : 'Debes tener 18 años o más para registrarte.';
+    const value = form[field] as string;
+    if (field === 'name') {
+      if (!value.trim()) return 'Escribe tu nombre.';
+      return value.trim().length < 2 ? 'El nombre debe tener al menos 2 caracteres.' : '';
+    }
+    if (field === 'email') {
+      if (!value.trim()) return 'Escribe tu correo electrónico.';
+      return this.isValidEmail(value) ? '' : 'Introduce un correo electrónico válido.';
+    }
+    if (field === 'password') {
+      if (!value) return 'Crea una contraseña.';
+      if (value.length < 8) return 'La contraseña debe tener al menos 8 caracteres.';
+      return value.length > 72 ? 'La contraseña no puede superar los 72 caracteres.' : '';
+    }
+    if (field === 'confirmPassword') {
+      if (!value) return 'Repite la contraseña.';
+      return value === form.password ? '' : 'Las contraseñas no coinciden.';
+    }
+    if (!value.trim()) return 'Indica tu ubicación.';
+    return value.trim().length < 2 ? 'Indica una ubicación válida.' : '';
+  }
+
+  socialLogin(provider: 'google' | 'apple' | 'facebook'): void {
+    const providerName = { google: 'Google', apple: 'Apple', facebook: 'Facebook' }[provider];
+    this.error.set('');
+    this.info.set(`El acceso con ${providerName} aún no está configurado. Vuelve a intentarlo más tarde.`);
+  }
+
+  forgotPassword(): void {
+    this.authStep.set('forgot-password');
+    this.forgotEmail.set('');
+    this.captchaToken.set('');
+    this.error.set('');
+    this.notice.set('');
+    this.info.set('');
+  }
+
+  getHelp(): void {
+    this.error.set('');
+    this.info.set('¿Necesitas ayuda? Escríbenos a hola@singlesplans.com y te ayudaremos a entrar.');
+  }
+
+  async requestPasswordReset(): Promise<void> {
+    if (this.authSubmitting()) return;
+    this.error.set('');
+    this.info.set('');
+    if (!this.isValidEmail(this.forgotEmail())) {
+      this.error.set('Introduce un correo electrónico válido.');
+      return;
+    }
+    if (!this.captchaToken()) {
+      this.error.set('Marca la casilla «Soy humano» para continuar.');
+      return;
+    }
+    this.authSubmitting.set(true);
     try {
-      if (this.authMode() === 'register') {
-        await this.auth.register(this.credentials);
+      const response = await this.auth.requestPasswordReset(
+        this.forgotEmail().trim().toLowerCase(),
+        this.captchaToken(),
+      );
+      this.notice.set(response.message);
+      this.captchaToken.set('');
+    } catch (error) {
+      this.error.set(this.errorMessage(error));
+      this.captchaToken.set('');
+    } finally {
+      this.authSubmitting.set(false);
+    }
+  }
+
+  async submitAuth(): Promise<void> {
+    if (this.authSubmitting()) return;
+    this.error.set('');
+    this.info.set('');
+    this.authSubmitting.set(true);
+    try {
+      if (this.authStep() === 'register-form') {
+        const captchaToken = this.captchaToken();
+        if (!captchaToken) {
+          this.error.set('Marca la casilla «Soy humano» para continuar.');
+          return;
+        }
+        if (!this.registerFormValid()) {
+          this.registerTouched.set({
+            name: true,
+            email: true,
+            password: true,
+            confirmPassword: true,
+            location: true,
+            adult: true,
+          });
+          this.error.set('Revisa los datos del formulario antes de continuar.');
+          return;
+        }
+        const form = this.registerForm();
+        await this.auth.register({
+          name: form.name.trim(),
+          email: form.email.trim().toLowerCase(),
+          password: form.password,
+          location: form.location.trim(),
+          adultConfirmed: form.adult,
+          captchaToken,
+        });
       } else {
-        await this.auth.login(this.credentials.email, this.credentials.password);
+        if (!this.loginFormValid()) {
+          this.loginTouched.set({ email: true, password: true });
+          this.error.set('Introduce un correo y una contraseña válidos.');
+          return;
+        }
+        const form = this.loginForm();
+        await this.auth.login(
+          form.email.trim().toLowerCase(),
+          form.password,
+          form.rememberMe,
+        );
       }
       this.adminView.set(false);
       this.dialogOpen.set(false);
@@ -225,6 +461,9 @@ export class SinglesPlansFacade {
       if (this.isAdmin) void this.router.navigate(['/administracion']);
     } catch (error) {
       this.error.set(this.errorMessage(error));
+      this.captchaToken.set('');
+    } finally {
+      this.authSubmitting.set(false);
     }
   }
 
