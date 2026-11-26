@@ -361,9 +361,9 @@ export class SinglesPlansFacade {
   }
 
   socialLogin(provider: 'google' | 'apple' | 'facebook'): void {
-    const providerName = { google: 'Google', apple: 'Apple', facebook: 'Facebook' }[provider];
     this.error.set('');
-    this.info.set(`El acceso con ${providerName} aún no está configurado. Vuelve a intentarlo más tarde.`);
+    this.info.set('');
+    window.location.assign(this.auth.oauthUrl(provider));
   }
 
   forgotPassword(): void {

@@ -30,6 +30,39 @@ API REST con Express, TypeScript y MongoDB/Mongoose.
 - `GET /api/admin/events`, `POST /api/admin/events`, `PATCH /api/admin/events/:id`, `DELETE /api/admin/events/:id`
 - `GET /api/health`
 
+## Inicio de sesión social
+
+Los botones usan OAuth 2 en `GET /api/auth/oauth/:provider` y el callback `/api/auth/oauth/:provider/callback` (Apple usa `POST`). Al completar, la API devuelve al frontend un JWT en `/cuenta/oauth/callback`. Si el proveedor no tiene credenciales, la API responde `503 El acceso con ... aún no está configurado.`
+
+### Modo demo local
+
+Para probar el flujo sin credenciales reales, define `OAUTH_DEMO=1` en `.env` y reinicia la API. Los tres botones muestran una pantalla local de prueba donde se introduce un correo; no se contacta con Google, Apple ni Facebook. Se ignora automáticamente cuando `NODE_ENV=production`. Pon `OAUTH_DEMO=0` en cuanto configures credenciales reales.
+
+### Google
+
+1. En [Google Cloud Console](https://console.cloud.google.com/), crea o selecciona un proyecto y configura la pantalla de consentimiento OAuth (tipo externo; añade tu correo como usuario de prueba si la app está en publicación de prueba).
+2. En **Credenciales**, crea un **ID de cliente OAuth** de tipo **Aplicación web**.
+3. Añade como URI de redireccionamiento autorizada `http://localhost:3000/api/auth/oauth/google/callback` (y la URL pública equivalente en producción).
+4. Copia el ID y el secreto en `GOOGLE_CLIENT_ID` y `GOOGLE_CLIENT_SECRET` de `.env`, y reinicia la API.
+
+### Facebook
+
+1. Crea una app en [Meta for Developers](https://developers.facebook.com/apps/) y añade el producto **Inicio de sesión con Facebook**.
+2. En **Configuración → Básico** copia el App ID y el App Secret en `FACEBOOK_APP_ID` y `FACEBOOK_APP_SECRET`.
+3. En **Inicio de sesión con Facebook → Configuración**, añade `http://localhost:3000/api/auth/oauth/facebook/callback` en **URI de redireccionamiento OAuth válidas**. Añade tus cuentas como probadoras si la app está en modo desarrollo.
+4. Reinicia la API.
+
+### Apple
+
+1. En [Apple Developer](https://developer.apple.com/account/resources/identifiers/list), crea un **Services ID** (no un App ID) con la capacitación **Sign in with Apple**.
+2. Configura ese Services ID con tu dominio, la URL de retorno HTTPS y la fuente de correo.
+3. En **Keys**, crea una clave con **Sign in with Apple**, descarga el `.p8` y anota su Key ID. El Team ID está en la página de membresía de la cuenta.
+4. Define `APPLE_CLIENT_ID` (el Services ID), `APPLE_TEAM_ID`, `APPLE_KEY_ID` y `APPLE_PRIVATE_KEY` con el contenido del `.p8` (se admiten `\n` literales). Reinicia la API.
+
+Apple no acepta `localhost` ni IP: en local expón la API con un túnel HTTPS y define `APPLE_REDIRECT_URI=https://tu-tunnel/api/auth/oauth/apple/callback`. Además, pon esa misma URL pública en `apiOrigin` de `front/public/google-maps-config.js`; así la cookie de estado se crea en el mismo dominio al que Apple vuelve. En `back/.env`, `API_ORIGIN` debe ser también esa URL pública.
+
+Puedes sobrescribir la URI de retorno de cualquier proveedor con `GOOGLE_REDIRECT_URI`, `FACEBOOK_REDIRECT_URI` o `APPLE_REDIRECT_URI`.
+
 El registro y la recuperación de contraseña exigen un token de Cloudflare Turnstile en `captchaToken`; el inicio de sesión no lo exige. La verificación se inicia solo después de que el usuario marque la casilla «Soy humano». Configura la clave secreta con `TURNSTILE_SECRET_KEY` en `.env`; la clave del sitio va en `front/public/google-maps-config.js`. Para enviar los correos de restablecimiento con Resend, usa `SMTP_HOST=smtp.resend.com`, `SMTP_PORT=587` y `SMTP_USER=resend`; define `SMTP_PASSWORD` con la API key de Resend (`re_...`). En local puedes usar `SMTP_FROM=onboarding@resend.dev`, pero Resend solo entrega esos correos a la dirección asociada a tu cuenta; para otros destinatarios necesitas un dominio verificado. Sin SMTP configurado la API responde 503 y no genera enlaces; el enlace enviado caduca en una hora.
 
 Las vistas públicas de eventos (`section=events`) y viajes (`section=trips`) solo devuelven planes publicados; la segunda incluye viajes y excursiones. Los usuarios registrados pueden crear grupos y proponer eventos sociales (`type: "event"`) dentro de sus propios grupos; estas propuestas quedan pendientes de aprobación. Solo las rutas administrativas permiten crear viajes y excursiones (`type: "trip"` o `"excursion"`). Los eventos guardan la zona o ciudad y el punto de encuentro (nombre, dirección, ID y coordenadas de Google Places), intereses, edad mínima/máxima (o `null` para cualquier edad a partir de 18), franja horaria, fechas, aforo y precio. Los usuarios pueden reservar plazas iniciando sesión. El script `seed:admin` puede promover una cuenta existente sin cambiar su contraseña.

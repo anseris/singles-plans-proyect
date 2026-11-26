@@ -1,20 +1,14 @@
 import bcrypt from 'bcryptjs';
 import { createHash, randomBytes } from 'node:crypto';
 import type { Request, Response, NextFunction } from 'express';
-import jwt from 'jsonwebtoken';
 import type { AuthenticatedRequest } from '../middleware/auth.middleware.js';
 import { User } from '../models/user.model.js';
+import { createAppToken } from '../services/auth-token.js';
 import {
   isPasswordResetEmailConfigured,
   sendPasswordResetEmail,
 } from '../services/password-reset-email.js';
 import { requireHumanVerification } from '../services/turnstile.js';
-
-function createToken(id: string, role: 'user' | 'admin', rememberMe = false): string {
-  const secret = process.env['JWT_SECRET'];
-  if (!secret) throw new Error('Falta la variable obligatoria JWT_SECRET.');
-  return jwt.sign({ role }, secret, { subject: id, expiresIn: rememberMe ? '30d' : '7d' });
-}
 
 function publicUser(user: {
   id: string;
@@ -73,7 +67,7 @@ export async function register(req: Request, res: Response, next: NextFunction):
       adultConfirmed
     });
     res.status(201).json({
-      token: createToken(user.id, user.role),
+      token: createAppToken(user.id, user.role),
       user: publicUser(user)
     });
   } catch (error) {
@@ -100,7 +94,7 @@ export async function login(req: Request, res: Response, next: NextFunction): Pr
     }
     const rememberMe = req.body['rememberMe'] === true;
     res.json({
-      token: createToken(user.id, user.role, rememberMe),
+      token: createAppToken(user.id, user.role, rememberMe),
       rememberMe,
       user: publicUser(user)
     });
@@ -180,7 +174,7 @@ export async function resetPassword(req: Request, res: Response, next: NextFunct
     await user.save();
     res.json({
       message: 'Tu contraseña se ha actualizado. Ya has iniciado sesión.',
-      token: createToken(user.id, user.role),
+      token: createAppToken(user.id, user.role),
       rememberMe: false,
       user: publicUser(user)
     });

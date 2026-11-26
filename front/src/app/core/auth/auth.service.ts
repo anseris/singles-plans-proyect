@@ -51,6 +51,26 @@ export class AuthService {
     this.setSession(await firstValueFrom(this.http.post<AuthResponse>('/api/auth/register', input)));
   }
 
+  oauthUrl(provider: 'google' | 'apple' | 'facebook'): string {
+    const configuredOrigin =
+      typeof window === 'undefined'
+        ? ''
+        : (window.SINGLESPLANS_CONFIG?.apiOrigin?.trim() ?? '').replace(/\/+$/, '');
+    const origin = configuredOrigin || '';
+    return `${origin}/api/auth/oauth/${provider}`;
+  }
+
+  async completeOAuth(token: string): Promise<void> {
+    sessionStorage.setItem('singles-plans-token', token);
+    localStorage.removeItem('singles-plans-token');
+    try {
+      this.user.set(await firstValueFrom(this.http.get<AppUser>('/api/auth/me')));
+    } catch (error) {
+      this.logout();
+      throw error;
+    }
+  }
+
   requestPasswordReset(email: string, captchaToken: string): Promise<{ message: string }> {
     return firstValueFrom(
       this.http.post<{ message: string }>('/api/auth/password/forgot', {

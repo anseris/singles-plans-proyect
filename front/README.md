@@ -25,6 +25,8 @@ En `public/google-maps-config.js`, configura `googleMapsApiKey` con una clave de
 
 ### Autenticación
 
+Los botones «Inicia sesión con Google/Apple/Facebook» redirigen a `/api/auth/oauth/<proveedor>`; el proveedor vuelve a `/cuenta/oauth/callback`, donde se guarda la sesión y se entra en `/eventos`. Por defecto se usa el proxy `/api` de desarrollo. Si la API está en otro origen público (necesario para Apple con túnel HTTPS), define `apiOrigin` en `public/google-maps-config.js` con esa URL, sin barra final. Con `OAUTH_DEMO=1` en la API, los botones abren una pantalla de prueba local; consulta el README de `back/` para las credenciales reales de cada proveedor.
+
 El registro y la recuperación usan Cloudflare Turnstile: la clave pública del sitio se configura en `public/google-maps-config.js` como `turnstileSiteKey`. La verificación no se ejecuta automáticamente: el usuario debe marcar la casilla «Soy humano» para iniciarla. El inicio de sesión no muestra captcha. La clave secreta nunca se envía al cliente; vive únicamente en `back/.env` como `TURNSTILE_SECRET_KEY`. “Mantenerme conectado” conserva la sesión en `localStorage`. La recuperación envía el enlace al correo indicado; al abrirlo se accede a `/cuenta/restablecer` con el token ya aplicado, se elige la nueva contraseña y la aplicación redirige a `/eventos` con la sesión iniciada. Sin SMTP configurado en la API, el formulario devuelve un error en lugar de enviar el correo.
 
 ## Organización del código

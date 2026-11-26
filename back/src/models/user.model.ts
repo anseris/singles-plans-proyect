@@ -11,6 +11,9 @@ const userSchema = new Schema(
     adultConfirmed: { type: Boolean, default: false, required: true },
     role: { type: String, enum: ['user', 'admin'], default: 'user', required: true },
     superusuario: { type: Boolean, default: false, required: true },
+    googleId: { type: String, select: false },
+    appleId: { type: String, select: false },
+    facebookId: { type: String, select: false },
     passwordResetTokenHash: { type: String, select: false },
     passwordResetExpiresAt: { type: Date, select: false }
   },

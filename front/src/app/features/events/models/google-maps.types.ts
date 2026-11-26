@@ -60,6 +60,7 @@ declare global {
     SINGLESPLANS_CONFIG?: {
       googleMapsApiKey?: string;
       turnstileSiteKey?: string;
+      apiOrigin?: string;
     };
   }
 }

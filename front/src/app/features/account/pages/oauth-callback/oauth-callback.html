@@ -1,0 +1,16 @@
+<section class="oauth-page">
+  <div class="oauth-card">
+    @if (loading()) {
+      <h1>Completando el acceso…</h1>
+      <p>Estamos preparando tu sesión.</p>
+    } @else if (error()) {
+      <h1>No se pudo iniciar sesión</h1>
+      <p class="oauth-error" role="alert">{{ error() }}</p>
+      <a routerLink="/eventos" class="oauth-link">Volver a SinglesPlans</a>
+    } @else {
+      <h1>Sesión iniciada</h1>
+      <p>Redirigiendo a la aplicación…</p>
+      <a routerLink="/eventos" class="oauth-link">Ir a SinglesPlans</a>
+    }
+  </div>
+</section>

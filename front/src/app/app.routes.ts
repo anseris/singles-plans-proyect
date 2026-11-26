@@ -9,6 +9,7 @@ import { GroupDetail } from './features/groups/pages/group-detail/group-detail';
 import { AllGroupsPage } from './features/groups/pages/all-groups/all-groups';
 import { AdminPage } from './features/admin/pages/admin-page/admin-page';
 import { ResetPassword } from './features/account/pages/reset-password/reset-password';
+import { OAuthCallback } from './features/account/pages/oauth-callback/oauth-callback';
 
 export const routes: Routes = [
   { path: '', pathMatch: 'full', redirectTo: 'eventos' },
@@ -23,5 +24,6 @@ export const routes: Routes = [
   { path: 'grupos/:id', component: GroupDetail },
   { path: 'administracion', component: AdminPage },
   { path: 'cuenta/restablecer', component: ResetPassword },
+  { path: 'cuenta/oauth/callback', component: OAuthCallback },
   { path: '**', redirectTo: 'eventos' },
 ];
