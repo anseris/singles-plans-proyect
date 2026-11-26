@@ -2,7 +2,6 @@ import { Component, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { AdminDashboard } from '../admin-dashboard/admin-dashboard';
 import { SinglesPlansFacade } from '../../../../core/application/singles-plans.facade';
-import { AuthService } from '../../../../core/auth/auth.service';
 import type { EventItem } from '../../../events/models/event.model';
 
 @Component({
@@ -12,24 +11,16 @@ import type { EventItem } from '../../../events/models/event.model';
 })
 export class AdminPage {
   readonly vm = inject(SinglesPlansFacade);
-  private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
   readonly ready = signal(false);
 
   async ngOnInit(): Promise<void> {
-    try {
-      await this.auth.restoreSession();
-      if (!this.vm.isAdmin) {
-        await this.router.navigate(['/eventos']);
-        return;
-      }
-      this.vm.adminView.set(true);
-      this.ready.set(true);
-      await Promise.all([this.vm.loadEvents(), this.vm.loadPlanSettings()]);
-    } catch {
-      this.vm.error.set('No se pudo cargar el panel de administración.');
-      this.ready.set(true);
+    const allowed = await this.vm.enterAdminView();
+    if (!allowed) {
+      await this.router.navigate(['/eventos']);
+      return;
     }
+    this.ready.set(true);
   }
 
   showPublicView(): void {

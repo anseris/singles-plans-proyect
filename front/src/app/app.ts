@@ -33,7 +33,7 @@ export class App implements OnInit {
   private readonly captcha = viewChild(TurnstileWidget);
 
   ngOnInit(): void {
-    this.vm.initialize();
+    void this.vm.initialize();
   }
 
   async submitAuth(): Promise<void> {

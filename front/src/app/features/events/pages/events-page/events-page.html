@@ -56,17 +56,39 @@
   </div>
   @if (activeSection() === 'events' && !adminView()) {
     <div class="event-list-navigation">
-      @if (isSuperusuario() && myEventsCount() > 0) {
-        <div class="event-view-tabs" role="tablist" aria-label="Mis eventos">
+      @if (showEventViewTabs()) {
+        <div class="event-view-tabs" role="tablist" aria-label="Vistas de eventos">
           <button
             type="button"
             role="tab"
-            [attr.aria-selected]="eventListView() === 'published'"
-            [class.active]="eventListView() === 'published'"
-            (click)="eventListViewSelected.emit('published')"
+            [attr.aria-selected]="eventListView() === 'groups'"
+            [class.active]="eventListView() === 'groups'"
+            (click)="eventListViewSelected.emit('groups')"
           >
-            Mis eventos publicados <span>{{ myEventsCount() }}</span>
+            Mis grupos <span>{{ joinedEventsCount() }}</span>
           </button>
+          @if (isSuperusuario() && myPublishedCount() > 0) {
+            <button
+              type="button"
+              role="tab"
+              [attr.aria-selected]="eventListView() === 'published'"
+              [class.active]="eventListView() === 'published'"
+              (click)="eventListViewSelected.emit('published')"
+            >
+              Mis eventos publicados <span>{{ myPublishedCount() }}</span>
+            </button>
+          }
+          @if (isSuperusuario() && myPendingCount() > 0) {
+            <button
+              type="button"
+              role="tab"
+              [attr.aria-selected]="eventListView() === 'pending'"
+              [class.active]="eventListView() === 'pending'"
+              (click)="eventListViewSelected.emit('pending')"
+            >
+              Propuestas pendientes <span>{{ myPendingCount() }}</span>
+            </button>
+          }
           @if (myJoinedEventsCount() > 0) {
             <button
               type="button"
@@ -75,7 +97,7 @@
               [class.active]="eventListView() === 'joined'"
               (click)="eventListViewSelected.emit('joined')"
             >
-              Mis eventos <span>{{ myJoinedEventsCount() }}</span>
+              Mis reservas <span>{{ myJoinedEventsCount() }}</span>
             </button>
           }
         </div>

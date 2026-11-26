@@ -32,10 +32,6 @@ export class AdminDashboard {
   readonly deleteRequested = output<EventItem>();
   interestDraft = '';
 
-  ngOnInit(): void {
-    void this.vm.loadPlanSettings();
-  }
-
   savePlanSettings(): void {
     void this.vm.updatePlanSettings(this.vm.planSettings());
   }

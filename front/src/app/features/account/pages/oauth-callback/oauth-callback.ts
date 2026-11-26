@@ -1,6 +1,7 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../../../core/auth/auth.service';
+import { SinglesPlansFacade } from '../../../../core/application/singles-plans.facade';
 
 @Component({
   selector: 'app-oauth-callback',
@@ -10,6 +11,7 @@ import { AuthService } from '../../../../core/auth/auth.service';
 })
 export class OAuthCallback implements OnInit {
   private readonly auth = inject(AuthService);
+  private readonly vm = inject(SinglesPlansFacade);
   private readonly router = inject(Router);
   readonly loading = signal(true);
   readonly error = signal('');
@@ -39,6 +41,7 @@ export class OAuthCallback implements OnInit {
 
     try {
       await this.auth.completeOAuth(token);
+      await this.vm.loadEvents();
       await this.router.navigate(['/eventos']);
     } catch {
       this.error.set('La sesión de acceso no es válida. Vuelve a iniciar sesión.');
