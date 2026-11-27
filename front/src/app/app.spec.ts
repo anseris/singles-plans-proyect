@@ -1,13 +1,38 @@
-import { signal } from '@angular/core';
-import { TestBed } from '@angular/core/testing';
-import { provideRouter } from '@angular/router';
+import { LOCALE_ID, signal } from '@angular/core';
+import { registerLocaleData } from '@angular/common';
+import localeEs from '@angular/common/locales/es';
+import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { provideRouter, Router } from '@angular/router';
 import { of } from 'rxjs';
-import { providePrimeNG } from 'primeng/config';
-import Aura from '@primeuix/themes/aura';
 import { App } from './app';
+import { routes } from './app.routes';
 import { AuthService, type AppUser } from './core/auth/auth.service';
 import { EventsService } from './features/events/data-access/events.service';
+import type { EventDetails } from './features/events/models/event.model';
 import { GroupsService } from './features/groups/data-access/groups.service';
+import type { GroupDetails } from './features/groups/models/group.model';
+
+registerLocaleData(localeEs, 'es-ES');
+
+async function renderApp(
+  path = '/eventos',
+  setup?: (vm: App['vm']) => void,
+): Promise<ComponentFixture<App>> {
+  const fixture = TestBed.createComponent(App);
+  setup?.(fixture.componentInstance.vm);
+  fixture.detectChanges();
+  await TestBed.inject(Router).navigateByUrl(path);
+  fixture.detectChanges();
+  await fixture.whenStable();
+  fixture.detectChanges();
+  return fixture;
+}
+
+async function settle(fixture: ComponentFixture<App>): Promise<void> {
+  fixture.detectChanges();
+  await fixture.whenStable();
+  fixture.detectChanges();
+}
 
 describe('App', () => {
   let requestedSection: 'events' | 'trips' | null;
@@ -21,13 +46,41 @@ describe('App', () => {
     password: string;
     rememberMe: boolean;
   } | null;
+  let eventDetailsResponse: EventDetails;
+  let groupDetailsResponse: GroupDetails;
 
   beforeEach(async () => {
+    Object.defineProperty(Element.prototype, 'scrollTo', { configurable: true, value: () => {} });
+    Object.defineProperty(window, 'scrollTo', { configurable: true, value: () => {} });
     requestedSection = null;
     joinedGroupId = null;
     resetRequest = null;
     resetResponse = { message: 'Si existe una cuenta con ese email, recibirás instrucciones.' };
     loginRequest = null;
+    eventDetailsResponse = {
+      _id: 'event-1',
+      title: 'Encuentro en Madrid',
+      description: 'Una tarde para conocernos.',
+      type: 'event',
+      location: 'Madrid',
+      startsAt: new Date(Date.now() + 86400000).toISOString(),
+      endsAt: new Date(Date.now() + 90000000).toISOString(),
+      price: 0,
+      capacity: 10,
+      imageUrl: '',
+      status: 'published',
+      isCreator: false,
+      isEnrolled: false,
+    };
+    groupDetailsResponse = {
+      group: { _id: 'group-1', name: 'Senderismo', description: 'Rutas para descubrir la sierra.', city: 'Madrid' },
+      createdById: 'user-1',
+      createdByName: 'Ana',
+      upcomingEvents: [],
+      pastEvents: [],
+      members: [],
+      memberCount: 0,
+    };
     currentUser = signal<AppUser | null>(null);
     interests = [
       { _id: 'interest-1', name: 'Senderismo' },
@@ -57,7 +110,11 @@ describe('App', () => {
         return of([]);
       },
       adminEvents: () => of([]),
-      enroll: () => of({ message: 'ok' }),
+      myEvents: () => of({ created: [], enrolled: [] }),
+      eventDetails: () => of(eventDetailsResponse),
+      eventAttendees: () => of([]),
+      enroll: () => of({ message: 'ok', joinedGroup: false }),
+      unenroll: () => of({ message: 'ok' }),
       create: () => of({}),
       update: () => of({}),
       remove: () => of(undefined)
@@ -66,12 +123,15 @@ describe('App', () => {
     await TestBed.configureTestingModule({
       imports: [App],
       providers: [
+        { provide: LOCALE_ID, useValue: 'es-ES' },
         { provide: AuthService, useValue: auth },
         { provide: EventsService, useValue: events },
         { provide: GroupsService, useValue: {
           allGroups: () => of([]),
+          groupDetails: () => of(groupDetailsResponse),
           allInterests: () => of(interests),
           adminInterests: () => of(interests),
+          planSettings: () => of({ standardPrice: 2, standardFreeEvents: 3, proMonthlyPrice: 15 }),
           myGroups: () => of([]),
           interestGroups: () => of([]),
           joinGroup: (id: string) => {
@@ -86,24 +146,21 @@ describe('App', () => {
             return of(created);
           }
         } },
-        providePrimeNG({ theme: { preset: Aura } }),
-        provideRouter([])
+        provideRouter(routes)
       ]
     }).compileComponents();
   });
 
   it('shows only the Events and Trips public sections', async () => {
-    const fixture = TestBed.createComponent(App);
-    fixture.detectChanges();
-    await fixture.whenStable();
+    const fixture = await renderApp();
 
     const compiled = fixture.nativeElement as HTMLElement;
     expect(compiled.querySelector('.brand')?.textContent).toContain('SinglesPlans');
     expect(compiled.querySelector('.hero h1')?.textContent).toContain('Encuentra tu gente.');
-    expect(Array.from(compiled.querySelectorAll('.main-nav button')).map((button) => button.textContent?.trim())).toEqual(['Eventos', 'Viajes']);
+    expect(Array.from(compiled.querySelectorAll('.main-nav a')).map((link) => link.textContent?.trim())).toEqual(['Eventos', 'Viajes']);
 
-    const tripsButton = Array.from(compiled.querySelectorAll('.main-nav button')).find((button) => button.textContent?.trim() === 'Viajes');
-    tripsButton?.dispatchEvent(new MouseEvent('click'));
+    const tripsLink = Array.from(compiled.querySelectorAll('.main-nav a')).find((link) => link.textContent?.trim() === 'Viajes');
+    tripsLink?.dispatchEvent(new MouseEvent('click'));
     fixture.detectChanges();
     await fixture.whenStable();
     expect(requestedSection).toBe('trips');
@@ -120,33 +177,30 @@ describe('App', () => {
     expect(app.authMode()).toBe('register');
   });
 
-  it('shows the first required step of the group creation wizard', () => {
-    const fixture = TestBed.createComponent(App);
-    const app = fixture.componentInstance.vm;
+  it('shows the first required step of the group creation wizard', async () => {
     currentUser.set({ id: 'user-1', name: 'Ana', email: 'ana@example.com', role: 'user' });
+    const fixture = await renderApp('/grupos/crear');
+    const app = fixture.componentInstance.vm;
 
-    app.openCreateGroup();
-    fixture.detectChanges();
 
     expect(app.groupStep()).toBe(1);
-    expect(fixture.nativeElement.querySelector('.group-step-indicator')?.textContent).toContain('Descripción');
-    expect(fixture.nativeElement.querySelector('[name="groupName"]')?.required).toBe(true);
-    expect(fixture.nativeElement.querySelector('.group-step-skip')).toBeNull();
-    expect(fixture.nativeElement.querySelector('.group-step-indicator [aria-current="step"]')?.textContent).toContain('Nombre');
+    expect(fixture.nativeElement.querySelector('.wizard-progress')?.textContent).toContain('Nombre');
+    expect(fixture.nativeElement.querySelector('[name="name"]')?.required).toBe(true);
+    expect(fixture.nativeElement.querySelector('.wizard-card [aria-current="step"]')).toBeNull();
+    expect(fixture.nativeElement.querySelector('.wizard-progress li.current')?.textContent).toContain('Nombre');
   });
 
   it('allows skipping optional group steps and selecting interests loaded from the API', async () => {
-    const fixture = TestBed.createComponent(App);
-    const app = fixture.componentInstance.vm;
     currentUser.set({ id: 'user-1', name: 'Ana', email: 'ana@example.com', role: 'user' });
-
-    await app.loadEvents();
-    app.openCreateGroup();
-    app.newGroup.name = 'Rutas con amigos';
+    const fixture = await renderApp('/grupos/crear');
+    const app = fixture.componentInstance.vm;
+    const nameInput = fixture.nativeElement.querySelector('[name="name"]') as HTMLInputElement;
+    nameInput.value = 'Rutas con amigos';
+    nameInput.dispatchEvent(new Event('input', { bubbles: true }));
     fixture.detectChanges();
-    (fixture.nativeElement.querySelector('.group-form-actions p-button button') as HTMLButtonElement).click();
+    (fixture.nativeElement.querySelector('.wizard-actions p-button button') as HTMLButtonElement).click();
     fixture.detectChanges();
-    expect(fixture.nativeElement.querySelector('[name="groupCity"]')?.required).toBe(false);
+    expect(fixture.nativeElement.querySelector('[name="city"]')?.required).toBe(false);
     expect(app.groupStep()).toBe(2);
     app.newGroup.city = 'Madrid';
     app.skipGroupStep();
@@ -155,19 +209,19 @@ describe('App', () => {
     app.skipGroupStep();
     expect(app.groupStep()).toBe(4);
     fixture.detectChanges();
-    expect(fixture.nativeElement.querySelectorAll('.group-interest-tag').length).toBe(6);
-    const interestTags = Array.from(fixture.nativeElement.querySelectorAll('.group-interest-tag')) as HTMLButtonElement[];
+    expect(fixture.nativeElement.querySelectorAll('.wizard-interests button').length).toBe(6);
+    const interestTags = Array.from(fixture.nativeElement.querySelectorAll('.wizard-interests button')) as HTMLButtonElement[];
     expect(interestTags.length).toBe(6);
     interestTags[0].click();
     interestTags[4].click();
     fixture.detectChanges();
-    expect(fixture.nativeElement.querySelectorAll('.group-interest-tag.selected').length).toBe(2);
+    expect(fixture.nativeElement.querySelectorAll('.wizard-interests button.selected').length).toBe(2);
     app.nextGroupStep();
     expect(app.groupStep()).toBe(5);
     expect(app.newGroup.interests).toEqual(['Senderismo', 'Conciertos']);
 
     fixture.detectChanges();
-    expect(fixture.nativeElement.querySelector('[name="groupDescription"]')?.required).toBe(true);
+    expect(fixture.nativeElement.querySelector('.wizard-card .rte-content[contenteditable="true"]')).not.toBeNull();
   });
 
   it('requires a group name before advancing and a description before submission', async () => {
@@ -197,30 +251,26 @@ describe('App', () => {
     expect(app.notice()).toContain('Aperitivo');
   });
 
-  it('walks through the nine event steps and validates required fields', () => {
-    const fixture = TestBed.createComponent(App);
-    const app = fixture.componentInstance.vm;
+  it('walks through the event steps and validates required fields', async () => {
     currentUser.set({ id: 'admin-1', name: 'Admin', email: 'admin@example.com', role: 'admin' });
-    app.groups.set([{
+    const fixture = await renderApp('/eventos/crear', (app) => app.groups.set([{
       _id: 'group-1',
       name: 'Planes de Madrid',
       description: 'Planes en Madrid.',
       city: 'Madrid'
-    }]);
+    }]));
+    const app = fixture.componentInstance.vm;
 
-    app.openCreateEvent();
     fixture.detectChanges();
     expect(app.eventStep()).toBe(1);
-    expect(fixture.nativeElement.querySelectorAll('.event-step-indicator li')).toHaveLength(9);
-    const stepIndicator = fixture.nativeElement.querySelector('.event-step-indicator') as HTMLOListElement;
-    expect(stepIndicator.querySelectorAll('li small').length).toBe(0);
-    expect(stepIndicator.classList.contains('full-field')).toBe(true);
+    expect(fixture.nativeElement.querySelectorAll('.event-wizard-progress li')).toHaveLength(10);
+    const stepIndicator = fixture.nativeElement.querySelector('.event-wizard-progress') as HTMLOListElement;
+    expect(stepIndicator.querySelectorAll('li small').length).toBe(10);
+    expect(stepIndicator.classList.contains('wizard-progress')).toBe(false);
     expect(window.getComputedStyle(stepIndicator).display).toBe('grid');
-    expect(window.getComputedStyle(stepIndicator).overflowX).toBe('hidden');
-    expect(fixture.nativeElement.querySelector('.event-current-step')?.textContent?.trim()).toBe('Nombre');
-    expect(fixture.nativeElement.querySelector('.event-context-fields')?.classList.contains('full-field')).toBe(true);
+    expect(fixture.nativeElement.querySelector('.event-wizard-progress li.current')?.textContent).toContain('Nombre');
+    expect(fixture.nativeElement.querySelector('.event-context-fields')).toBeNull();
     expect(fixture.nativeElement.querySelector('[name="type"]')).toBeNull();
-    expect(fixture.nativeElement.querySelector('.event-context-fields label')).toBeNull();
     expect(app.eventAnyAge()).toBe(false);
     expect(app.eventIsFree()).toBe(false);
     app.nextEventStep();
@@ -244,16 +294,16 @@ describe('App', () => {
     expect(app.eventStep()).toBe(6);
     expect(app.eventAnyAge()).toBe(false);
     fixture.detectChanges();
-    expect(fixture.nativeElement.querySelector('.event-age-step .event-switch')).not.toBeNull();
-    expect(fixture.nativeElement.querySelector('.event-age-step .event-age-range')).not.toBeNull();
-    expect((fixture.nativeElement.querySelector('[name="anyAge"]') as HTMLInputElement).checked).toBe(false);
-    expect((fixture.nativeElement.querySelector('[name="minAge"]') as HTMLInputElement).matches(':disabled')).toBe(false);
+    expect(fixture.nativeElement.querySelector('.event-age-fields .event-switch')).not.toBeNull();
+    expect(fixture.nativeElement.querySelector('.event-age-fields [name="minAge"]')).not.toBeNull();
+    expect((fixture.nativeElement.querySelector('.event-switch input[name="anyAge"]') as HTMLInputElement).checked).toBe(false);
+    expect((fixture.nativeElement.querySelector('[name="minAge"]') as HTMLInputElement).disabled).toBe(false);
     app.toggleEventAnyAge(true);
-    fixture.detectChanges();
-    expect((fixture.nativeElement.querySelector('[name="minAge"]') as HTMLInputElement).matches(':disabled')).toBe(true);
+    await settle(fixture);
+    expect((fixture.nativeElement.querySelector('[name="minAge"]') as HTMLInputElement).disabled).toBe(true);
     app.toggleEventAnyAge(false);
-    fixture.detectChanges();
-    expect((fixture.nativeElement.querySelector('[name="minAge"]') as HTMLInputElement).matches(':disabled')).toBe(false);
+    await settle(fixture);
+    expect((fixture.nativeElement.querySelector('[name="minAge"]') as HTMLInputElement).disabled).toBe(false);
     app.eventMinimumAge = 17;
     app.nextEventStep();
     expect(app.eventStep()).toBe(6);
@@ -263,31 +313,30 @@ describe('App', () => {
     expect(app.eventStep()).toBe(7);
     expect(app.newEvent.ageRange).toEqual({ min: 25, max: 45 });
     fixture.detectChanges();
-    expect(fixture.nativeElement.querySelector('.event-schedule [name="startsAt"]')).not.toBeNull();
-    expect(fixture.nativeElement.querySelector('.event-schedule [name="endsAt"]')).not.toBeNull();
-    expect(fixture.nativeElement.querySelector('.event-schedule .event-time-of-day')).not.toBeNull();
+    expect(fixture.nativeElement.querySelector('[name="startsAt"]')).not.toBeNull();
+    expect(fixture.nativeElement.querySelector('[name="endsAt"]')).not.toBeNull();
     app.setEventTimeOfDay('all-day');
     expect(app.newEvent.startsAt.endsWith('T00:00')).toBe(true);
     expect(app.newEvent.endsAt.endsWith('T23:59')).toBe(true);
     app.nextEventStep();
     expect(app.eventStep()).toBe(8);
     fixture.detectChanges();
-    expect(fixture.nativeElement.querySelector('[name="capacity"]')?.required).toBe(true);
-    expect(fixture.nativeElement.querySelector('.event-price-inline')).not.toBeNull();
+    expect(fixture.nativeElement.querySelector('[name="capacity"]')).not.toBeNull();
+    expect(fixture.nativeElement.querySelector('[name="price"]')).not.toBeNull();
     expect((fixture.nativeElement.querySelector('[name="isFree"]') as HTMLInputElement).checked).toBe(false);
-    expect((fixture.nativeElement.querySelector('[name="price"]') as HTMLInputElement).matches(':disabled')).toBe(false);
+    expect((fixture.nativeElement.querySelector('[name="price"]') as HTMLInputElement).disabled).toBe(false);
     app.toggleEventFree(true);
-    fixture.detectChanges();
-    expect((fixture.nativeElement.querySelector('[name="price"]') as HTMLInputElement).matches(':disabled')).toBe(true);
+    await settle(fixture);
+    expect((fixture.nativeElement.querySelector('[name="price"]') as HTMLInputElement).disabled).toBe(true);
     app.toggleEventFree(false);
-    fixture.detectChanges();
-    expect((fixture.nativeElement.querySelector('[name="price"]') as HTMLInputElement).matches(':disabled')).toBe(false);
+    await settle(fixture);
+    expect((fixture.nativeElement.querySelector('[name="price"]') as HTMLInputElement).disabled).toBe(false);
     app.newEvent.price = 12.5;
     app.nextEventStep();
     expect(app.eventStep()).toBe(9);
     expect(app.newEvent.price).toBe(12.5);
     fixture.detectChanges();
-    expect(fixture.nativeElement.querySelector('[name="description"]')?.required).toBe(true);
+    expect(fixture.nativeElement.querySelector('.event-wizard-card .rte-content[contenteditable="true"]')).not.toBeNull();
   });
 
   it('searches and selects Google Places suggestions in the meeting-point input', async () => {
@@ -323,22 +372,20 @@ describe('App', () => {
       }
     };
 
-    const fixture = TestBed.createComponent(App);
+    let fixture: ComponentFixture<App> | undefined;
     try {
-      const app = fixture.componentInstance.vm;
       currentUser.set({ id: 'admin-1', name: 'Admin', email: 'admin@example.com', role: 'admin' });
-      app.groups.set([{
+      fixture = await renderApp('/eventos/crear', (vm) => vm.groups.set([{
         _id: 'group-1',
         name: 'Planes de Madrid',
         description: 'Planes en Madrid.',
         city: 'Madrid'
-      }]);
-      app.openCreateEvent();
+      }]));
+      const app = fixture.componentInstance.vm;
       app.eventStep.set(3);
-      fixture.detectChanges();
-      await fixture.whenStable();
+      await settle(fixture);
 
-      const input = fixture.nativeElement.querySelector('#meeting-point-search') as HTMLInputElement;
+      const input = fixture.nativeElement.querySelector('[name="meetingPoint"]') as HTMLInputElement;
       input.value = 'Calle Córdoba';
       input.dispatchEvent(new Event('input', { bubbles: true }));
       await new Promise((resolve) => setTimeout(resolve, 300));
@@ -351,7 +398,7 @@ describe('App', () => {
       await fixture.whenStable();
       fixture.detectChanges();
 
-      expect(input.value).toBe('Café Central, Calle Córdoba, Madrid');
+      expect(input.value).toBe('Café Central');
       expect(app.newEvent.meetingPoint).toEqual({
         name: 'Café Central',
         address: 'Calle Córdoba, Madrid',
@@ -360,22 +407,20 @@ describe('App', () => {
         longitude: -3.7
       });
     } finally {
-      fixture.destroy();
+      fixture?.destroy();
       window.SINGLESPLANS_CONFIG = previousConfig;
       window.google = previousGoogle;
     }
   });
 
   it('shows the event initial and a Google Maps link for the meeting point', async () => {
-    const fixture = TestBed.createComponent(App);
-    fixture.detectChanges();
-    await fixture.whenStable();
+    const fixture = await renderApp();
     const start = new Date(Date.now() + 86400000).toISOString();
-    fixture.componentInstance.vm.events.set([{
+    const event = {
       _id: 'event-1',
       title: '  Encuentro en Madrid',
       description: 'Una tarde para conocernos.',
-      type: 'event',
+      type: 'event' as const,
       location: 'Madrid',
       meetingPoint: {
         name: 'Café Central',
@@ -386,42 +431,57 @@ describe('App', () => {
       },
       interests: ['Aperitivo'],
       ageRange: null,
-      timeOfDay: 'afternoon',
+      timeOfDay: 'afternoon' as const,
       startsAt: start,
       endsAt: new Date(Date.now() + 90000000).toISOString(),
       price: 0,
       capacity: 10,
       imageUrl: '',
-      status: 'published'
-    }]);
+      groupId: 'group-1',
+      group: { _id: 'group-1', name: 'Planes de Madrid', description: '', city: 'Madrid' },
+      status: 'published' as const
+    };
+    fixture.componentInstance.vm.interestGroups.set([event.group!]);
+    fixture.componentInstance.vm.events.set([event]);
     fixture.componentInstance.vm.loading.set(false);
     fixture.detectChanges();
 
     expect((fixture.nativeElement.querySelector('.event-image-placeholder') as HTMLElement).textContent?.trim()).toBe('E');
-    const meetingLink = fixture.nativeElement.querySelector('.event-meeting-point') as HTMLAnchorElement;
+
+    eventDetailsResponse = { ...event, isCreator: false, isEnrolled: false };
+    await TestBed.inject(Router).navigateByUrl('/eventos/detalles/event-1');
+    await settle(fixture);
+
+    const meetingLink = fixture.nativeElement.querySelector('.detail-meeting-point') as HTMLAnchorElement;
     expect(meetingLink.href).toContain('https://www.google.com/maps/search/');
     expect(meetingLink.href).toContain('query_place_id=place-123');
     expect(meetingLink.textContent).toContain('Café Central');
   });
 
-  it('opens the group detail view from a compact group card', () => {
-    const fixture = TestBed.createComponent(App);
+  it('opens the group detail view from a compact group card', async () => {
+    const fixture = await renderApp();
     const app = fixture.componentInstance.vm;
     currentUser.set({ id: 'user-1', name: 'Ana', email: 'ana@example.com', role: 'user' });
-    app.groups.set([{
+    const group = {
       _id: 'group-1',
       name: 'Senderismo',
       description: 'Rutas para descubrir la sierra.',
       city: 'Madrid',
       ageRange: { min: 25, max: 45 },
       imageUrl: 'data:image/png;base64,aGVsbG8='
-    }]);
-    app.myGroups.set(app.groups());
-    app.allGroups.set(app.groups());
+    };
+    app.groups.set([group]);
+    app.myGroups.set([group]);
+    app.allGroups.set([group]);
+    groupDetailsResponse = {
+      ...groupDetailsResponse,
+      group,
+      createdById: 'user-1',
+    };
     fixture.detectChanges();
 
     (fixture.nativeElement.querySelector('.group-card-main') as HTMLButtonElement).click();
-    fixture.detectChanges();
+    await settle(fixture);
 
     const detail = fixture.nativeElement.querySelector('.group-detail-card') as HTMLElement;
     expect(detail.textContent).toContain('Senderismo');
@@ -434,9 +494,7 @@ describe('App', () => {
   });
 
   it('shows membership and managed tabs and links to the all-groups view', async () => {
-    const fixture = TestBed.createComponent(App);
-    fixture.detectChanges();
-    await fixture.whenStable();
+    const fixture = await renderApp();
 
     const app = fixture.componentInstance.vm;
     currentUser.set({ id: 'user-1', name: 'Ana', email: 'ana@example.com', role: 'user' });
@@ -492,9 +550,7 @@ describe('App', () => {
   });
 
   it('shows all public groups in the separate view when logged out', async () => {
-    const fixture = TestBed.createComponent(App);
-    fixture.detectChanges();
-    await fixture.whenStable();
+    const fixture = await renderApp();
 
     fixture.componentInstance.vm.allGroups.set([{
       _id: 'group-2',
@@ -522,9 +578,7 @@ describe('App', () => {
   });
 
   it('uses the uppercase first letter as a group card image fallback', async () => {
-    const fixture = TestBed.createComponent(App);
-    fixture.detectChanges();
-    await fixture.whenStable();
+    const fixture = await renderApp();
     fixture.componentInstance.vm.allGroups.set([{
       _id: 'group-3',
       name: '  conciertos locales',
@@ -542,9 +596,7 @@ describe('App', () => {
   });
 
   it('lets an authenticated user join a group and adds it to their interests', async () => {
-    const fixture = TestBed.createComponent(App);
-    fixture.detectChanges();
-    await fixture.whenStable();
+    const fixture = await renderApp();
     const app = fixture.componentInstance.vm;
     currentUser.set({ id: 'user-1', name: 'Ana', email: 'ana@example.com', role: 'user' });
     const group = {
