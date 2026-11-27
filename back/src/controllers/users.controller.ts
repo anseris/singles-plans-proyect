@@ -8,6 +8,7 @@ interface PublicGroup {
   name: string;
   city: string;
   imageUrl: string;
+  status: 'active' | 'cancelled';
 }
 
 interface PublicUser {
@@ -55,27 +56,18 @@ export async function getPublicUser(req: Request, res: Response, next: NextFunct
 
     if (user.showGroups) {
       const memberships = await GroupMembership.find({ user: user._id })
-        .populate('group', 'name city imageUrl')
+        .populate('group', 'name city imageUrl status')
         .limit(30)
         .lean();
       result.groups = memberships
-        .map((membership) => membership.group as unknown as {
-          _id: mongoose.Types.ObjectId;
-          name: string;
-          city?: string;
-          imageUrl?: string;
-        } | null)
-        .filter((group): group is {
-          _id: mongoose.Types.ObjectId;
-          name: string;
-          city?: string;
-          imageUrl?: string;
-        } => !!group)
+        .map((membership) => membership.group as unknown as PublicGroup & { _id: mongoose.Types.ObjectId } | null)
+        .filter((group): group is PublicGroup & { _id: mongoose.Types.ObjectId } => !!group)
         .map((group) => ({
           id: String(group._id),
           name: group.name,
           city: group.city ?? '',
           imageUrl: group.imageUrl ?? '',
+          status: group.status === 'cancelled' ? 'cancelled' : 'active',
         }));
     }
 

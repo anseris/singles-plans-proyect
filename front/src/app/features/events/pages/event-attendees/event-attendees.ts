@@ -17,6 +17,7 @@ export class EventAttendeesPage {
   private readonly eventsApi = inject(EventsService);
   readonly eventId = signal('');
   readonly eventTitle = signal('');
+  readonly eventStatus = signal('');
   readonly attendees = signal<EventAttendee[]>([]);
   readonly activeTab = signal<'active' | 'cancelled'>('active');
   readonly activeAttendees = computed(() =>
@@ -50,6 +51,7 @@ export class EventAttendeesPage {
         firstValueFrom(this.eventsApi.eventAttendees(id))
       ]);
       this.eventTitle.set(event.title);
+      this.eventStatus.set(event.status);
       this.attendees.set(attendees);
     } catch {
       this.error.set('No se pudo cargar la lista de asistentes. Inténtalo de nuevo.');

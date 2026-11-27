@@ -77,7 +77,12 @@
                   groupInitial(group.name)
                 }}</span>
               }
-              <h3>{{ group.name }}</h3>
+              <h3>
+                {{ group.name }}
+                @if (group.status === 'cancelled') {
+                  <span class="cancelled-stamp" aria-label="Grupo cancelado">Cancelado</span>
+                }
+              </h3>
               <span class="group-card-location">
                 <i class="pi pi-map-marker"></i>{{ group.city || 'Comunidad online' }}
               </span>
@@ -87,6 +92,7 @@
                 label="Crear evento"
                 icon="pi pi-plus"
                 size="small"
+                [disabled]="group.status === 'cancelled'"
                 (onClick)="eventRequested.emit(group)"
               />
             } @else if (authenticated() && isInterestGroup(group)) {
@@ -102,6 +108,7 @@
                 label="Unirme al grupo"
                 icon="pi pi-user-plus"
                 size="small"
+                [disabled]="group.status === 'cancelled'"
                 (onClick)="joinRequested.emit(group)"
               />
             }

@@ -51,6 +51,10 @@ export class GroupsService {
     return this.http.patch<GroupItem>(`/api/groups/${id}`, group);
   }
 
+  cancelGroup(id: string): Observable<GroupItem> {
+    return this.http.post<GroupItem>(`/api/groups/${id}/cancel`, {});
+  }
+
   deleteGroup(id: string): Observable<void> {
     return this.http.delete<void>(`/api/groups/${id}`);
   }

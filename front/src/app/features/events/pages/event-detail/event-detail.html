@@ -16,7 +16,7 @@
     <app-event-detail-view [event]="item" (organizerSelected)="openUserInfo($event)">
       <section class="detail-attendance">
         @if (item.status === 'cancelled') {
-          <p-tag value="Evento cancelado" severity="danger" />
+          <span class="cancelled-stamp" aria-label="Evento cancelado">Cancelado</span>
         } @else if (canManageEvent()) {
           <p class="detail-owner-note">
             Este es tu evento
@@ -94,13 +94,20 @@
   styleClass="attendance-dialog"
 >
   @if (event(); as item) {
-    <p>
-      ¿Quieres unirte al grupo <strong>{{ item.group?.name }}</strong> donde se organiza este
-      evento?
-    </p>
-    <p class="attendance-dialog-help">
-      Puedes asistir al evento aunque decidas no unirte al grupo.
-    </p>
+    @if (item.group?.status === 'cancelled') {
+      <p>
+        El grupo <strong>{{ item.group?.name }}</strong> está cancelado, pero puedes seguir asistiendo
+        al evento.
+      </p>
+    } @else {
+      <p>
+        ¿Quieres unirte al grupo <strong>{{ item.group?.name }}</strong> donde se organiza este
+        evento?
+      </p>
+      <p class="attendance-dialog-help">
+        Puedes asistir al evento aunque decidas no unirte al grupo.
+      </p>
+    }
     @if (vm.error()) {
       <div class="alert error">{{ vm.error() }}</div>
     }
@@ -135,7 +142,7 @@
   @if (managementAction() === 'delete') {
     <p>¿Seguro que quieres eliminar este evento? También se eliminarán las reservas de asistencia. Esta acción no se puede deshacer.</p>
   } @else {
-    <p>¿Seguro que quieres cancelar este evento? Dejará de aparecer en los eventos públicos y sus reservas se conservarán.</p>
+    <p>¿Seguro que quieres cancelar este evento? Seguirá apareciendo con el sello «Cancelado», no admitirá nuevas reservas y las existentes se conservarán.</p>
   }
   @if (managementError()) {
     <div class="alert error">{{ managementError() }}</div>

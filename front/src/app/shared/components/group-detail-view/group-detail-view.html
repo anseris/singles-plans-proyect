@@ -12,6 +12,9 @@
 <div class="group-detail-content">
   <p class="group-eyebrow">Comunidad SinglesPlans</p>
   <h1>{{ group().name }}</h1>
+  @if (group().status === 'cancelled') {
+    <span class="cancelled-stamp" aria-label="Grupo cancelado">Cancelado</span>
+  }
   <div class="group-detail-meta">
     <span><i class="pi pi-map-marker"></i> {{ group().city }}</span>
     @if (group().ageRange) {

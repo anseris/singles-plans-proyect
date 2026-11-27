@@ -130,7 +130,7 @@ export class EventDetailPage {
       this.event.set({ ...event, status: 'cancelled' });
       this.managementAction.set(null);
       await this.vm.loadEvents();
-      this.vm.notice.set('El evento se ha cancelado y ya no aparece en los eventos públicos.');
+      this.vm.notice.set('El evento se ha cancelado y seguirá apareciendo con el sello «Cancelado».');
     } catch (error) {
       this.managementError.set(
         error instanceof HttpErrorResponse && typeof error.error?.message === 'string'

@@ -34,9 +34,13 @@ export class GroupDetail {
     if (!group) return [];
     return this.vm.myEvents().filter((event) => this.eventGroupId(event) === group._id);
   });
+  readonly isCancelled = computed(() => this.group()?.status === 'cancelled');
   readonly deleteDialogOpen = signal(false);
   readonly deleteLoading = signal(false);
   readonly deleteError = signal('');
+  readonly cancelDialogOpen = signal(false);
+  readonly cancelLoading = signal(false);
+  readonly cancelError = signal('');
   readonly activeTab = signal<'about' | 'events' | 'members'>('about');
   readonly eventsTab = signal<'upcoming' | 'past' | 'managed'>('upcoming');
   readonly selectedUserId = signal('');
@@ -85,6 +89,29 @@ export class GroupDetail {
 
   editGroup(group: GroupItem): void {
     void this.router.navigate(['/grupos/crear'], { queryParams: { editar: group._id } });
+  }
+
+  async cancelGroup(): Promise<void> {
+    const group = this.group();
+    if (!group || !this.canManageGroup() || this.isCancelled()) return;
+    this.cancelLoading.set(true);
+    this.cancelError.set('');
+    try {
+      const updated = await firstValueFrom(this.groupsApi.cancelGroup(group._id));
+      this.group.set(updated);
+      this.details.update((details) => details ? { ...details, group: updated } : details);
+      this.cancelDialogOpen.set(false);
+      await this.vm.loadEvents();
+      this.vm.notice.set('El grupo se ha cancelado y seguirá apareciendo con el sello «Cancelado».');
+    } catch (error) {
+      this.cancelError.set(
+        error instanceof HttpErrorResponse && typeof error.error?.message === 'string'
+          ? error.error.message
+          : 'No se pudo cancelar el grupo. Inténtalo de nuevo.',
+      );
+    } finally {
+      this.cancelLoading.set(false);
+    }
   }
 
   async deleteGroup(): Promise<void> {

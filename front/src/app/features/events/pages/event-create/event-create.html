@@ -20,7 +20,9 @@
       <label>Grupo
         <select name="groupId" [(ngModel)]="vm.newEvent.groupId" required>
           @for (group of vm.groups(); track group._id) {
-            <option [value]="group._id">{{ group.name }}</option>
+            <option [value]="group._id" [disabled]="group.status === 'cancelled'">
+              {{ group.name }}{{ group.status === 'cancelled' ? ' (Cancelado)' : '' }}
+            </option>
           }
         </select>
       </label>

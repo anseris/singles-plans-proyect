@@ -55,7 +55,12 @@
             @for (group of person.groups; track group.id) {
               <li>
                 <a [routerLink]="['/grupos', group.id]" (click)="close()">
-                  <strong>{{ group.name }}</strong>
+                  <strong>
+                    {{ group.name }}
+                    @if (group.status === 'cancelled') {
+                      <span class="cancelled-stamp" aria-label="Grupo cancelado">Cancelado</span>
+                    }
+                  </strong>
                   <small>{{ group.city || 'Comunidad online' }}</small>
                   <i class="pi pi-arrow-up-right"></i>
                 </a>

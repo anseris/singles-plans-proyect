@@ -82,7 +82,12 @@
                     </span>
                   }
                   <span class="profile-group-info">
-                    <strong>{{ group.name }}</strong>
+                    <strong>
+                      {{ group.name }}
+                      @if (group.status === 'cancelled') {
+                        <span class="cancelled-stamp" aria-label="Grupo cancelado">Cancelado</span>
+                      }
+                    </strong>
                     <small>{{ group.city || 'Comunidad online' }}</small>
                   </span>
                   <i class="pi pi-arrow-right"></i>

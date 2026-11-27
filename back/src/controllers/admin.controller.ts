@@ -117,8 +117,8 @@ export async function createEvent(req: AuthenticatedRequest, res: Response, next
       res.status(400).json({ message: 'Revisa los datos, selecciona un grupo existente y comprueba las fechas, el precio y el aforo.' });
       return;
     }
-    if (!(await Group.exists({ _id: input['groupId'] }))) {
-      res.status(400).json({ message: 'El grupo seleccionado ya no existe. Crea o selecciona otro grupo.' });
+    if (!(await Group.exists({ _id: input['groupId'], status: 'active' }))) {
+      res.status(400).json({ message: 'El grupo seleccionado ya no existe o está cancelado. Crea o selecciona otro grupo.' });
       return;
     }
 
@@ -135,7 +135,7 @@ export async function createEvent(req: AuthenticatedRequest, res: Response, next
 
 export async function listEvents(_req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
-    const events = await Event.find().populate('createdBy', 'name email avatarUrl').populate('group', 'name city').sort({ createdAt: -1 }).lean();
+    const events = await Event.find().populate('createdBy', 'name email avatarUrl').populate('group', 'name city status').sort({ createdAt: -1 }).lean();
     const counts = await Enrollment.aggregate([
       { $match: { event: { $in: events.map((event) => event._id) }, status: { $ne: 'cancelled' } } },
       { $group: { _id: '$event', count: { $sum: 1 } } }
@@ -169,8 +169,8 @@ export async function updateEvent(req: Request, res: Response, next: NextFunctio
       return;
     }
     if ('groupId' in req.body) {
-      if (!mongoose.isValidObjectId(req.body['groupId']) || !(await Group.exists({ _id: req.body['groupId'] }))) {
-        res.status(400).json({ message: 'Selecciona un grupo existente.' });
+      if (!mongoose.isValidObjectId(req.body['groupId']) || !(await Group.exists({ _id: req.body['groupId'], status: 'active' }))) {
+        res.status(400).json({ message: 'Selecciona un grupo activo existente.' });
         return;
       }
       update['group'] = req.body['groupId'];

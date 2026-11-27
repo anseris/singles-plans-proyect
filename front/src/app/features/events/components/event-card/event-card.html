@@ -16,11 +16,17 @@
           {{ eventInitial(event().title) }}
         </div>
       }
+      @if (event().status === 'cancelled') {
+        <span class="cancelled-stamp" aria-label="Evento cancelado">Cancelado</span>
+      }
     </div>
     <div class="card-content">
       <h3>{{ event().title }}</h3>
       <p class="event-card-group">
         <i class="pi pi-users"></i>{{ event().group?.name || 'Grupo sin nombre' }}
+        @if (event().group?.status === 'cancelled') {
+          <span class="cancelled-stamp" aria-label="Grupo cancelado">Cancelado</span>
+        }
       </p>
       <div class="event-card-footer">
         <span><i class="pi pi-calendar"></i>{{ eventDateTimeLabel(event()) }}</span>
@@ -36,7 +42,7 @@
       <span><i class="pi pi-check-circle"></i> Asistirás</span>
       <button
         type="button"
-        [disabled]="unenrollDisabled()"
+        [disabled]="unenrollDisabled() || event().status === 'cancelled'"
         [attr.aria-label]="'Desapuntarme de ' + event().title"
         (click)="unenrollRequested.emit(event())"
       >

@@ -25,7 +25,15 @@
         @for (group of groups(); track group._id) {
           <article class="group-chip">
             <span class="group-avatar"><i class="pi pi-users"></i></span>
-            <span><strong>{{ group.name }}</strong><small>{{ group.city || 'Comunidad SinglesPlans' }}@if (group.ageRange; as ageRange) { · {{ ageRange.min }}–{{ ageRange.max }} años }</small></span>
+            <span>
+              <strong>
+                {{ group.name }}
+                @if (group.status === 'cancelled') {
+                  <span class="cancelled-stamp" aria-label="Grupo cancelado">Cancelado</span>
+                }
+              </strong>
+              <small>{{ group.city || 'Comunidad SinglesPlans' }}@if (group.ageRange; as ageRange) { · {{ ageRange.min }}–{{ ageRange.max }} años }</small>
+            </span>
           </article>
         }
       </div>
@@ -98,8 +106,24 @@
         <article class="admin-event">
           <div class="event-type-icon" [class.trip]="event.type === 'trip'" [class.event]="event.type === 'event'"><i class="pi" [class.pi-sun]="event.type === 'excursion'" [class.pi-send]="event.type === 'trip'" [class.pi-ticket]="event.type === 'event'"></i></div>
           <div class="admin-event-copy">
-            <div class="admin-event-title"><h3>{{ event.title }}</h3><p-tag [value]="statusLabel(event.status)" [severity]="event.status === 'published' ? 'success' : event.status === 'pending' ? 'warn' : 'secondary'" /></div>
-            <p><i class="pi pi-users"></i>{{ event.group?.name || 'Sin grupo asignado' }} <span>·</span><i class="pi pi-map-marker"></i>{{ event.location }} <span>·</span> {{ formatDate(event.startsAt) }}</p>
+            <div class="admin-event-title">
+              <h3>
+                {{ event.title }}
+                @if (event.status === 'cancelled') {
+                  <span class="cancelled-stamp" aria-label="Evento cancelado">Cancelado</span>
+                }
+              </h3>
+              @if (event.status !== 'cancelled') {
+                <p-tag [value]="statusLabel(event.status)" [severity]="event.status === 'published' ? 'success' : event.status === 'pending' ? 'warn' : 'secondary'" />
+              }
+            </div>
+            <p>
+              <i class="pi pi-users"></i>{{ event.group?.name || 'Sin grupo asignado' }}
+              @if (event.group?.status === 'cancelled') {
+                <span class="cancelled-stamp" aria-label="Grupo cancelado">Cancelado</span>
+              }
+              <span>·</span><i class="pi pi-map-marker"></i>{{ event.location }} <span>·</span> {{ formatDate(event.startsAt) }}
+            </p>
           </div>
           <div class="admin-event-actions">
             @if (event.status === 'pending') {

@@ -35,7 +35,10 @@ export async function connectDatabase(): Promise<void> {
     Event.createIndexes(),
     Enrollment.createIndexes()
   ]);
-  // Las reservas anteriores al estado de cancelación se consideran activas.
-  await Enrollment.updateMany({ status: { $exists: false } }, { $set: { status: 'active' } });
+  // Las reservas y los grupos anteriores al estado de cancelación se consideran activos.
+  await Promise.all([
+    Enrollment.updateMany({ status: { $exists: false } }, { $set: { status: 'active' } }),
+    Group.updateMany({ status: { $exists: false } }, { $set: { status: 'active' } })
+  ]);
   console.log('Conectado a MongoDB.');
 }

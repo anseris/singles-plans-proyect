@@ -24,7 +24,7 @@ export async function getPlanSettings(_req: Request, res: Response, next: NextFu
 
 export async function listAll(_req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
-    const groups = await Group.find().select('name description city ageRange imageUrl interests createdAt').sort({ createdAt: -1 }).lean();
+    const groups = await Group.find().select('name description city ageRange imageUrl interests status createdAt').sort({ createdAt: -1 }).lean();
     res.json(groups);
   } catch (error) {
     next(error);
@@ -48,12 +48,12 @@ export async function getGroupDetails(req: Request, res: Response, next: NextFun
     const now = new Date();
     const [organizer, upcomingEvents, pastEvents, members, memberCount] = await Promise.all([
       User.findById(group.createdBy).select('name avatarUrl').lean(),
-      Event.find({ group: group._id, status: 'published', endsAt: { $gte: now } })
-        .populate('group', 'name city')
+      Event.find({ group: group._id, status: { $in: ['published', 'cancelled'] }, endsAt: { $gte: now } })
+        .populate('group', 'name city status')
         .sort({ startsAt: 1 })
         .lean(),
-      Event.find({ group: group._id, status: 'published', endsAt: { $lt: now } })
-        .populate('group', 'name city')
+      Event.find({ group: group._id, status: { $in: ['published', 'cancelled'] }, endsAt: { $lt: now } })
+        .populate('group', 'name city status')
         .sort({ startsAt: -1 })
         .lean(),
       GroupMembership.find({ group: group._id })
@@ -112,6 +112,10 @@ export async function joinGroup(req: AuthenticatedRequest, res: Response, next: 
     const group = await Group.findById(req.params['id']);
     if (!group) {
       res.status(404).json({ message: 'No se encontró el grupo.' });
+      return;
+    }
+    if (group.status === 'cancelled') {
+      res.status(409).json({ message: 'Este grupo está cancelado y ya no admite nuevos miembros.' });
       return;
     }
     try {
@@ -251,6 +255,39 @@ export async function updateGroup(req: AuthenticatedRequest, res: Response, next
       res.status(409).json({ message: 'Ya existe un grupo con ese nombre.' });
       return;
     }
+    next(error);
+  }
+}
+
+export async function cancelGroup(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const id = req.params['id'];
+    if (!mongoose.isValidObjectId(id)) {
+      res.status(404).json({ message: 'No se encontró el grupo.' });
+      return;
+    }
+
+    const group = await Group.findById(id).select('createdBy status');
+    if (!group) {
+      res.status(404).json({ message: 'No se encontró el grupo.' });
+      return;
+    }
+    if (String(group.createdBy) !== req.auth?.userId && req.auth?.role !== 'admin') {
+      res.status(403).json({ message: 'Solo quien creó el grupo puede cancelarlo.' });
+      return;
+    }
+    if (group.status === 'cancelled') {
+      res.json(group);
+      return;
+    }
+
+    const cancelled = await Group.findByIdAndUpdate(
+      id,
+      { $set: { status: 'cancelled' } },
+      { new: true, runValidators: true }
+    );
+    res.json(cancelled);
+  } catch (error) {
     next(error);
   }
 }

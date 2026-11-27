@@ -13,6 +13,9 @@
       <span>·</span> {{ event().location }}
     </p>
     <h1>{{ event().title }}</h1>
+    @if (event().status === 'cancelled') {
+      <span class="cancelled-stamp" aria-label="Evento cancelado">Cancelado</span>
+    }
   </div>
 
   <div class="detail-fact detail-date">
@@ -38,7 +41,12 @@
       }
       <span class="detail-group-copy">
         <small>Organizado en el grupo</small>
-        <strong>{{ group.name }}</strong>
+        <strong>
+          {{ group.name }}
+          @if (group.status === 'cancelled') {
+            <span class="cancelled-stamp" aria-label="Grupo cancelado">Cancelado</span>
+          }
+        </strong>
       </span>
       <i class="pi pi-arrow-up-right detail-card-arrow"></i>
     </a>

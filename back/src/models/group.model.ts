@@ -17,6 +17,7 @@ const groupSchema = new Schema(
     imageUrl: { type: String, maxlength: 3_000_000, default: '' },
     interests: { type: [{ type: String, trim: true, maxlength: 40 }], default: [] },
     plan: { type: String, enum: ['standard', 'pro'], default: 'standard', required: true },
+    status: { type: String, enum: ['active', 'cancelled'], default: 'active', required: true },
     createdBy: { type: Schema.Types.ObjectId, ref: 'User', required: true }
   },
   { timestamps: true }

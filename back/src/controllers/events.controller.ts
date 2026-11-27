@@ -11,7 +11,7 @@ export async function listPublic(req: AuthenticatedRequest, res: Response, next:
   try {
     const type = req.query['type'];
     const section = req.query['section'];
-    const filter: Record<string, unknown> = { status: 'published', startsAt: { $gte: new Date() } };
+    const filter: Record<string, unknown> = { status: { $in: ['published', 'cancelled'] }, startsAt: { $gte: new Date() } };
     if (section === 'events') {
       filter['type'] = 'event';
     } else if (section === 'trips') {
@@ -19,7 +19,7 @@ export async function listPublic(req: AuthenticatedRequest, res: Response, next:
     } else if (typeof type === 'string' && ['excursion', 'trip', 'event'].includes(type)) {
       filter['type'] = type;
     }
-    const events = await Event.find(filter).populate('group', 'name city').sort({ startsAt: 1 }).lean();
+    const events = await Event.find(filter).populate('group', 'name city status').sort({ startsAt: 1 }).lean();
     const [counts, enrolledEventIds] = await Promise.all([
       Enrollment.aggregate([
         { $match: { event: { $in: events.map((event) => event._id) }, status: { $ne: 'cancelled' } } },
@@ -44,8 +44,8 @@ export async function listPublic(req: AuthenticatedRequest, res: Response, next:
 export async function listMine(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
   try {
     const [created, enrollments] = await Promise.all([
-      Event.find({ createdBy: req.auth?.userId }).populate('group', 'name city').sort({ createdAt: -1 }).lean(),
-      Enrollment.find({ user: req.auth?.userId, status: { $ne: 'cancelled' } }).populate({ path: 'event', populate: { path: 'group', select: 'name city' } }).sort({ createdAt: -1 }).lean()
+      Event.find({ createdBy: req.auth?.userId }).populate('group', 'name city status').sort({ createdAt: -1 }).lean(),
+      Enrollment.find({ user: req.auth?.userId, status: { $ne: 'cancelled' } }).populate({ path: 'event', populate: { path: 'group', select: 'name city status' } }).sort({ createdAt: -1 }).lean()
     ]);
     const enrolled = enrollments.flatMap((enrollment) => {
       const event = enrollment.event as { _id?: unknown } | null;
@@ -65,7 +65,7 @@ export async function getEventDetails(req: AuthenticatedRequest, res: Response, 
       return;
     }
     const event = await Event.findById(id)
-      .populate('group', 'name city imageUrl')
+      .populate('group', 'name city imageUrl status')
       .populate('createdBy', 'name avatarUrl')
       .lean();
     if (!event) {
@@ -74,7 +74,7 @@ export async function getEventDetails(req: AuthenticatedRequest, res: Response, 
     }
     const creator = event.createdBy as { _id?: unknown } | null;
     const isCreator = !!req.auth?.userId && String(creator?._id) === req.auth.userId;
-    if (event.status !== 'published' && !isCreator && req.auth?.role !== 'admin') {
+    if (!['published', 'cancelled'].includes(event.status) && !isCreator && req.auth?.role !== 'admin') {
       res.status(404).json({ message: 'No se encontró el evento.' });
       return;
     }
@@ -109,7 +109,7 @@ export async function listEventAttendees(req: AuthenticatedRequest, res: Respons
       return;
     }
     const isCreator = !!req.auth?.userId && String(event.createdBy) === req.auth.userId;
-    if (event.status !== 'published' && !isCreator && req.auth?.role !== 'admin') {
+    if (!['published', 'cancelled'].includes(event.status) && !isCreator && req.auth?.role !== 'admin') {
       res.status(404).json({ message: 'No se encontró el evento.' });
       return;
     }
@@ -143,9 +143,9 @@ export async function createCommunityEvent(req: AuthenticatedRequest, res: Respo
       return;
     }
 
-    const group = await Group.findOne({ _id: input['groupId'], createdBy: req.auth?.userId });
+    const group = await Group.findOne({ _id: input['groupId'], createdBy: req.auth?.userId, status: 'active' });
     if (!group) {
-      res.status(403).json({ message: 'Solo puedes crear eventos dentro de un grupo que hayas creado.' });
+      res.status(403).json({ message: 'Solo puedes crear eventos dentro de un grupo activo que hayas creado.' });
       return;
     }
 
@@ -183,9 +183,9 @@ export async function updateCommunityEvent(req: AuthenticatedRequest, res: Respo
       res.status(400).json({ message: 'Revisa los datos del evento antes de guardar los cambios.' });
       return;
     }
-    const group = await Group.findOne({ _id: input['groupId'], createdBy: req.auth?.userId });
+    const group = await Group.findOne({ _id: input['groupId'], createdBy: req.auth?.userId, status: 'active' });
     if (!group && req.auth?.role !== 'admin') {
-      res.status(403).json({ message: 'Selecciona uno de tus grupos para publicar el evento.' });
+      res.status(403).json({ message: 'Selecciona uno de tus grupos activos para publicar el evento.' });
       return;
     }
 
@@ -245,16 +245,21 @@ export async function cancelCommunityEvent(req: AuthenticatedRequest, res: Respo
     const filter = req.auth?.role === 'admin'
       ? { _id: id }
       : { _id: id, createdBy: req.auth?.userId };
-    const event = await Event.findOneAndUpdate(
-      { ...filter, status: { $ne: 'cancelled' } },
+    const existing = await Event.findOne(filter).select('status');
+    if (!existing) {
+      res.status(404).json({ message: 'No se encontró el evento.' });
+      return;
+    }
+    if (existing.status === 'cancelled') {
+      res.json(existing);
+      return;
+    }
+    const cancelled = await Event.findOneAndUpdate(
+      filter,
       { $set: { status: 'cancelled' } },
       { new: true, runValidators: true }
     );
-    if (!event) {
-      res.status(404).json({ message: 'No se encontró el evento o ya estaba cancelado.' });
-      return;
-    }
-    res.json(event);
+    res.json(cancelled);
   } catch (error) {
     next(error);
   }
@@ -301,11 +306,14 @@ export async function enroll(req: AuthenticatedRequest, res: Response, next: Nex
         { upsert: true, new: true, runValidators: true }
       );
       if (req.body['joinGroup'] === true) {
-        await GroupMembership.updateOne(
-          { group: event.group, user: req.auth?.userId },
-          { $setOnInsert: { group: event.group, user: req.auth?.userId } },
-          { upsert: true }
-        );
+        const group = await Group.findById(event.group).select('status');
+        if (group && group.status !== 'cancelled') {
+          await GroupMembership.updateOne(
+            { group: event.group, user: req.auth?.userId },
+            { $setOnInsert: { group: event.group, user: req.auth?.userId } },
+            { upsert: true }
+          );
+        }
       }
     } catch (error) {
       await Event.updateOne({ _id: event.id }, { $inc: { enrolledCount: -1 } });

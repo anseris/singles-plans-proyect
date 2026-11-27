@@ -116,6 +116,16 @@ describe('SinglesPlansFacade event views', () => {
     expect(facade.visibleEvents().map((item) => item._id)).toEqual(['own-1']);
   });
 
+  it('mantiene visibles los eventos cancelados propios y de los grupos', () => {
+    const facade = TestBed.inject(SinglesPlansFacade);
+    facade.events.set([event('joined-cancelled', 'cancelled')]);
+    facade.interestGroups.set([group]);
+    facade.myEvents.set([event('own-cancelled', 'cancelled')]);
+
+    expect(facade.joinedGroupEvents().map((item) => item._id)).toEqual(['joined-cancelled']);
+    expect(facade.myPublishedEvents().map((item) => item._id)).toEqual(['own-cancelled']);
+  });
+
   it('separa las propuestas pendientes de los eventos propios publicados', () => {
     const facade = TestBed.inject(SinglesPlansFacade);
     facade.myEvents.set([event('own-1', 'published'), event('own-2', 'pending')]);

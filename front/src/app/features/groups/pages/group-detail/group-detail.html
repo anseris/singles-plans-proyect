@@ -26,7 +26,12 @@
       >
         <div class="group-detail-actions">
         @if (canCreateEvent()) {
-          <p-button label="Crear evento" icon="pi pi-plus" (onClick)="createEvent(currentGroup)" />
+          <p-button
+            label="Crear evento"
+            icon="pi pi-plus"
+            [disabled]="isCancelled()"
+            (onClick)="createEvent(currentGroup)"
+          />
         }
         @if (canManageGroup()) {
           <p-button
@@ -35,6 +40,14 @@
             severity="secondary"
             (onClick)="editGroup(currentGroup)"
           />
+          @if (!isCancelled()) {
+            <p-button
+              label="Cancelar grupo"
+              icon="pi pi-ban"
+              severity="secondary"
+              (onClick)="cancelDialogOpen.set(true); cancelError.set('')"
+            />
+          }
           <p-button
             label="Eliminar grupo"
             icon="pi pi-trash"
@@ -105,27 +118,6 @@
             </div>
           }
         </section>
-
-        <p-dialog
-          [visible]="deleteDialogOpen()"
-          (visibleChange)="deleteDialogOpen.set($event)"
-          header="Eliminar grupo"
-          [modal]="true"
-          [draggable]="false"
-          [resizable]="false"
-        >
-          <p>
-            ¿Seguro que quieres eliminar este grupo? Si tiene eventos asociados, tendrás que eliminarlos
-            primero. Esta acción no se puede deshacer.
-          </p>
-          @if (deleteError()) {
-            <div class="alert error">{{ deleteError() }}</div>
-          }
-          <div class="group-delete-actions">
-            <p-button label="Eliminar grupo" icon="pi pi-trash" severity="danger" [loading]="deleteLoading()" (onClick)="deleteGroup()" />
-            <p-button label="Cancelar" severity="secondary" [disabled]="deleteLoading()" (onClick)="deleteDialogOpen.set(false)" />
-          </div>
-        </p-dialog>
       } @else if (activeTab() === 'events') {
         <section
           id="group-events-panel"
@@ -181,7 +173,7 @@
           } @else if (eventsTab() === 'upcoming') {
             <div class="group-detail-empty">
               <i class="pi pi-calendar"></i>
-              <p>No hay próximos eventos publicados en este grupo.</p>
+              <p>No hay próximos eventos en este grupo.</p>
             </div>
           } @else if (eventsTab() === 'managed') {
             <div class="group-events-grid">
@@ -243,6 +235,48 @@
           }
         </section>
       }
+
+      <p-dialog
+        [visible]="deleteDialogOpen()"
+        (visibleChange)="deleteDialogOpen.set($event)"
+        header="Eliminar grupo"
+        [modal]="true"
+        [draggable]="false"
+        [resizable]="false"
+      >
+        <p>
+          ¿Seguro que quieres eliminar este grupo? Si tiene eventos asociados, tendrás que eliminarlos
+          primero. Esta acción no se puede deshacer.
+        </p>
+        @if (deleteError()) {
+          <div class="alert error">{{ deleteError() }}</div>
+        }
+        <div class="group-delete-actions">
+          <p-button label="Eliminar grupo" icon="pi pi-trash" severity="danger" [loading]="deleteLoading()" (onClick)="deleteGroup()" />
+          <p-button label="Cancelar" severity="secondary" [disabled]="deleteLoading()" (onClick)="deleteDialogOpen.set(false)" />
+        </div>
+      </p-dialog>
+
+      <p-dialog
+        [visible]="cancelDialogOpen()"
+        (visibleChange)="cancelDialogOpen.set($event)"
+        header="Cancelar grupo"
+        [modal]="true"
+        [draggable]="false"
+        [resizable]="false"
+      >
+        <p>
+          ¿Seguro que quieres cancelar este grupo? Seguirá apareciendo con el sello «Cancelado», no se
+          podrán crear eventos ni aceptar nuevos miembros, y conservará sus eventos y miembros.
+        </p>
+        @if (cancelError()) {
+          <div class="alert error">{{ cancelError() }}</div>
+        }
+        <div class="group-delete-actions">
+          <p-button label="Confirmar cancelación" icon="pi pi-ban" severity="secondary" [loading]="cancelLoading()" (onClick)="cancelGroup()" />
+          <p-button label="Volver" severity="secondary" [disabled]="cancelLoading()" (onClick)="cancelDialogOpen.set(false)" />
+        </div>
+      </p-dialog>
     }
   } @else {
     <div class="group-detail-state">

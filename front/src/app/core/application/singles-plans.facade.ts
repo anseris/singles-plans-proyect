@@ -45,7 +45,7 @@ function emptyRegisterForm(): RegisterFormState {
 }
 
 function isUpcomingPublished(event: EventItem): boolean {
-  return event.status === 'published' && new Date(event.startsAt).getTime() >= Date.now();
+  return ['published', 'cancelled'].includes(event.status) && new Date(event.startsAt).getTime() >= Date.now();
 }
 
 interface UserEventData {
@@ -78,7 +78,7 @@ export class SinglesPlansFacade {
     );
   });
   readonly myPublishedEvents = computed(() =>
-    this.myEvents().filter((event) => event.status === 'published'),
+    this.myEvents().filter((event) => ['published', 'cancelled'].includes(event.status)),
   );
   readonly myPendingEvents = computed(() =>
     this.myEvents().filter((event) => event.status === 'pending'),
@@ -650,6 +650,10 @@ export class SinglesPlansFacade {
   async joinGroup(group: GroupItem): Promise<void> {
     if (!this.user()) {
       this.openAuth('login');
+      return;
+    }
+    if (group.status === 'cancelled') {
+      this.error.set('Este grupo está cancelado y ya no admite nuevos miembros.');
       return;
     }
     this.error.set('');

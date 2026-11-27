@@ -5,6 +5,8 @@ export interface InterestItem {
   name: string;
 }
 
+export type GroupStatus = 'active' | 'cancelled';
+
 export interface GroupItem {
   _id: string;
   name: string;
@@ -14,9 +16,10 @@ export interface GroupItem {
   imageUrl?: string;
   interests?: string[];
   plan?: 'standard' | 'pro';
+  status?: GroupStatus;
 }
 
-export interface CreateGroupInput extends Omit<GroupItem, '_id' | 'ageRange' | 'imageUrl' | 'interests'> {
+export interface CreateGroupInput extends Omit<GroupItem, '_id' | 'ageRange' | 'imageUrl' | 'interests' | 'status'> {
   imageUrl: string;
   interests: string[];
   plan: 'standard' | 'pro';

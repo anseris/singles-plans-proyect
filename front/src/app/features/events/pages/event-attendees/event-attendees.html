@@ -5,7 +5,14 @@
   <header class="attendees-heading">
     <p class="eyebrow">COMUNIDAD DEL EVENTO</p>
     <h1>Personas asistentes</h1>
-    @if (eventTitle()) { <p>{{ eventTitle() }}</p> }
+    @if (eventTitle()) {
+      <p>
+        {{ eventTitle() }}
+        @if (eventStatus() === 'cancelled') {
+          <span class="cancelled-stamp" aria-label="Evento cancelado">Cancelado</span>
+        }
+      </p>
+    }
   </header>
 
   @if (loading()) {

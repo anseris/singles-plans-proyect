@@ -1,8 +1,11 @@
+import type { GroupStatus } from '../../groups/models/group.model';
+
 export interface PublicUserGroup {
   id: string;
   name: string;
   city: string;
   imageUrl: string;
+  status?: GroupStatus;
 }
 
 export interface PublicUserProfile {
