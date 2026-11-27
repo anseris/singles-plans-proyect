@@ -1,10 +1,13 @@
 import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
+import { of } from 'rxjs';
 import { AuthService, type AppUser } from '../../../../core/auth/auth.service';
+import { GroupsService } from '../../../groups/data-access/groups.service';
 import { SettingsPage } from './settings';
 
 describe('SettingsPage', () => {
   const user = signal<AppUser | null>(null);
+  let createInterest: ReturnType<typeof vi.fn>;
 
   beforeEach(async () => {
     user.set({
@@ -24,10 +27,23 @@ describe('SettingsPage', () => {
       occupation: 'tecnologia',
       contactPermission: 'miembros-grupos',
     });
+    createInterest = vi.fn();
 
     await TestBed.configureTestingModule({
       imports: [SettingsPage],
-      providers: [{ provide: AuthService, useValue: { user } }],
+      providers: [
+        { provide: AuthService, useValue: { user } },
+        {
+          provide: GroupsService,
+          useValue: {
+            allInterests: () => of([
+              { _id: 'interest-1', name: 'Senderismo' },
+              { _id: 'interest-2', name: 'Cine' },
+            ]),
+            createInterest,
+          },
+        },
+      ],
     }).compileComponents();
   });
 
@@ -51,8 +67,26 @@ describe('SettingsPage', () => {
     expect(fixture.componentInstance.roleLabel()).toBe('Miembro');
   });
 
-  it('carga los valores guardados y permite alternar intereses', () => {
+  it('carga el catálogo de intereses desde la BBDD', async () => {
     const fixture = TestBed.createComponent(SettingsPage);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(fixture.componentInstance.interestCatalog()).toEqual(['Senderismo', 'Cine']);
+    expect(fixture.componentInstance.availableInterests()).toEqual(['Senderismo', 'Cine', 'Viajes']);
+    fixture.componentInstance.selectTab('personal');
+    fixture.detectChanges();
+    const tags = Array.from(
+      fixture.nativeElement.querySelectorAll('.interest-tag') as NodeListOf<HTMLElement>,
+    ).map((element) => element.textContent?.trim());
+    expect(tags).toEqual(['Senderismo', 'Cine', 'Viajes']);
+  });
+
+  it('carga los valores guardados y permite alternar intereses', async () => {
+    const fixture = TestBed.createComponent(SettingsPage);
+    fixture.detectChanges();
+    await fixture.whenStable();
     fixture.detectChanges();
     const page = fixture.componentInstance;
 
@@ -64,6 +98,21 @@ describe('SettingsPage', () => {
     expect(page.interests()).toEqual(['Viajes', 'Cine']);
     page.toggleInterest('Cine');
     expect(page.interests()).toEqual(['Viajes']);
+  });
+
+  it('añade un interés personalizado solo a los intereses del usuario', async () => {
+    const fixture = TestBed.createComponent(SettingsPage);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    const page = fixture.componentInstance;
+
+    page.customInterestDraft.set('  Padel  ');
+    page.addCustomInterest();
+
+    expect(page.interests()).toEqual(['Viajes', 'Padel']);
+    expect(page.availableInterests()).toContain('Padel');
+    expect(page.interestCatalog()).toEqual(['Senderismo', 'Cine']);
+    expect(createInterest).not.toHaveBeenCalled();
   });
 
   it('incluye los tooltips de privacidad en la pestaña Perfil', () => {

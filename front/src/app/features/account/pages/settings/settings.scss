@@ -27,6 +27,10 @@
 .interest-tags { display: flex; flex-wrap: wrap; gap: 8px; }
 .interest-tag { padding: 8px 12px; border: 1px solid var(--line); border-radius: 999px; background: #fff; color: var(--muted); font-size: 12px; font-weight: 600; cursor: pointer; }
 .interest-tag.selected { border-color: var(--sea); background: #edf4f1; color: var(--sea); }
+.custom-interest-add { display: flex; gap: 8px; }
+.custom-interest-add input { flex: 1 1 auto; min-width: 0; }
+.custom-interest-add button { padding: 0 16px; border: 1px solid var(--sea); border-radius: 10px; background: #fff; color: var(--sea); font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; }
+.custom-interest-add button:hover { background: #edf4f1; }
 .switch-label { display: inline-flex !important; align-items: center; gap: 7px; color: var(--ink); }
 .info-icon { position: relative; display: inline-grid; place-items: center; color: var(--sea); cursor: help; }
 .info-icon::after { position: absolute; bottom: calc(100% + 8px); left: 50%; z-index: 5; width: max-content; max-width: 220px; padding: 8px 10px; border-radius: 8px; background: var(--ink); color: #fff; content: attr(data-tooltip); font-size: 11px; opacity: 0; transform: translateX(-50%); }

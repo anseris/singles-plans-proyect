@@ -1,7 +1,9 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, OnDestroy, computed, effect, inject, signal } from '@angular/core';
+import { Component, OnDestroy, OnInit, computed, effect, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { firstValueFrom } from 'rxjs';
 import { AuthService } from '../../../../core/auth/auth.service';
+import { GroupsService } from '../../../groups/data-access/groups.service';
 import { UserAvatar } from '../../../../shared/components/user-avatar/user-avatar';
 
 type SettingsTab = 'profile' | 'personal' | 'privacy';
@@ -9,21 +11,6 @@ type SettingsTab = 'profile' | 'personal' | 'privacy';
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 const MAX_SIZE = 2 * 1024 * 1024;
 const MAX_INTERESTS = 10;
-
-const INTERESTS = [
-  'Viajes',
-  'Cine',
-  'Música',
-  'Senderismo',
-  'Gastronomía',
-  'Fotografía',
-  'Deporte',
-  'Lectura',
-  'Arte',
-  'Tecnología',
-  'Mascotas',
-  'Cocina',
-];
 
 const GENDERS = [
   { value: '', label: 'Selecciona una opción' },
@@ -72,14 +59,23 @@ const CONTACT_OPTIONS = [
   templateUrl: './settings.html',
   styleUrl: './settings.scss',
 })
-export class SettingsPage implements OnDestroy {
+export class SettingsPage implements OnInit, OnDestroy {
   private readonly auth = inject(AuthService);
+  private readonly groupsApi = inject(GroupsService);
   private initialized = false;
   private objectUrl = '';
 
   readonly user = this.auth.user;
   readonly today = new Date().toISOString().slice(0, 10);
-  readonly interestCatalog = INTERESTS;
+  readonly interestCatalog = signal<string[]>([]);
+  readonly availableInterests = computed(() => {
+    const names = new Map<string, string>();
+    for (const name of [...this.interestCatalog(), ...this.interests()]) {
+      const key = name.toLocaleLowerCase('es');
+      if (!names.has(key)) names.set(key, name);
+    }
+    return [...names.values()];
+  });
   readonly genderOptions = GENDERS;
   readonly maritalStatusOptions = MARITAL_STATUSES;
   readonly occupationOptions = OCCUPATIONS;
@@ -94,6 +90,7 @@ export class SettingsPage implements OnDestroy {
   readonly birthDate = signal('');
   readonly gender = signal('');
   readonly interests = signal<string[]>([]);
+  readonly customInterestDraft = signal('');
   readonly maritalStatus = signal('');
   readonly occupation = signal('');
   readonly contactPermission = signal('miembros-grupos');
@@ -135,6 +132,15 @@ export class SettingsPage implements OnDestroy {
     });
   }
 
+  async ngOnInit(): Promise<void> {
+    try {
+      const interests = await firstValueFrom(this.groupsApi.allInterests());
+      this.interestCatalog.set(interests.map((interest) => interest.name));
+    } catch {
+      this.error.set('No se ha podido cargar el catálogo de intereses.');
+    }
+  }
+
   ngOnDestroy(): void {
     this.revokeObjectUrl();
   }
@@ -153,6 +159,26 @@ export class SettingsPage implements OnDestroy {
       this.error.set('');
       return [...current, interest];
     });
+  }
+
+  addCustomInterest(): void {
+    const name = this.customInterestDraft().trim();
+    if (!name || name.length > 40) return;
+    const existing = this.availableInterests().find(
+      (item) => item.toLocaleLowerCase('es') === name.toLocaleLowerCase('es'),
+    );
+    if (existing) {
+      this.error.set('Ese interés ya está en la lista.');
+      this.customInterestDraft.set('');
+      return;
+    }
+    if (this.interests().length >= MAX_INTERESTS) {
+      this.error.set(`Puedes elegir un máximo de ${MAX_INTERESTS} intereses.`);
+      return;
+    }
+    this.interests.update((current) => [...current, name]);
+    this.customInterestDraft.set('');
+    this.error.set('');
   }
 
   onFileSelected(event: Event): void {

@@ -199,7 +199,7 @@
                 <div class="settings-field full">
                   <span id="settings-interests">Intereses</span>
                   <div class="interest-tags" aria-labelledby="settings-interests">
-                    @for (interest of interestCatalog; track interest) {
+                    @for (interest of availableInterests(); track interest) {
                       <button
                         type="button"
                         class="interest-tag"
@@ -211,7 +211,19 @@
                       </button>
                     }
                   </div>
-                  <small>Elige hasta 10 intereses. {{ interests().length }}/10 seleccionados.</small>
+                  <div class="custom-interest-add">
+                    <input
+                      type="text"
+                      name="customInterest"
+                      maxlength="40"
+                      placeholder="Añadir otro interés"
+                      aria-label="Añadir otro interés"
+                      [value]="customInterestDraft()"
+                      (input)="customInterestDraft.set($any($event.target).value)"
+                    />
+                    <button type="button" (click)="addCustomInterest()">Añadir</button>
+                  </div>
+                  <small>Elige hasta 10 intereses. {{ interests().length }}/10 seleccionados. Los intereses que añadas aquí se guardarán solo en tu perfil.</small>
                 </div>
                 <label class="settings-field" for="settings-marital">
                   <span>Estado civil</span>

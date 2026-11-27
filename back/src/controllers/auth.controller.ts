@@ -80,8 +80,11 @@ function readBoolean(body: Record<string, unknown>, key: string): boolean | unde
 }
 
 function canonicalInterest(value: string): string | null {
+  const trimmed = value.trim();
+  if (!trimmed || trimmed.length > 40) return null;
   return (
-    ALLOWED_INTERESTS.find((interest) => interest.toLowerCase() === value.toLowerCase()) ?? null
+    ALLOWED_INTERESTS.find((interest) => interest.toLowerCase() === trimmed.toLowerCase()) ??
+    trimmed
   );
 }
 
@@ -99,7 +102,11 @@ function parseInterests(value: unknown): string[] | undefined {
   for (const item of parsed) {
     if (typeof item !== 'string') continue;
     const interest = canonicalInterest(item.trim());
-    if (interest && !interests.includes(interest) && interests.length < MAX_INTERESTS) {
+    if (
+      interest &&
+      !interests.some((item) => item.toLocaleLowerCase('es') === interest.toLocaleLowerCase('es')) &&
+      interests.length < MAX_INTERESTS
+    ) {
       interests.push(interest);
     }
   }
