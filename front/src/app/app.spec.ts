@@ -15,6 +15,7 @@ describe('App', () => {
   let joinedGroupId: string | null;
   let resetRequest: { email: string; captchaToken: string } | null;
   let resetResponse: { message: string };
+  let interests: { _id: string; name: string }[];
   let loginRequest: {
     email: string;
     password: string;
@@ -28,6 +29,14 @@ describe('App', () => {
     resetResponse = { message: 'Si existe una cuenta con ese email, recibirás instrucciones.' };
     loginRequest = null;
     currentUser = signal<AppUser | null>(null);
+    interests = [
+      { _id: 'interest-1', name: 'Senderismo' },
+      { _id: 'interest-2', name: 'Salir' },
+      { _id: 'interest-3', name: 'Aperitivo' },
+      { _id: 'interest-4', name: 'Tardeo' },
+      { _id: 'interest-5', name: 'Conciertos' },
+      { _id: 'interest-6', name: 'Deportes' },
+    ];
     const auth = {
       user: currentUser,
       restoreSession: async () => {},
@@ -61,15 +70,8 @@ describe('App', () => {
         { provide: EventsService, useValue: events },
         { provide: GroupsService, useValue: {
           allGroups: () => of([]),
-          allInterests: () => of([
-            { _id: 'interest-1', name: 'Senderismo' },
-            { _id: 'interest-2', name: 'Salir' },
-            { _id: 'interest-3', name: 'Aperitivo' },
-            { _id: 'interest-4', name: 'Tardeo' },
-            { _id: 'interest-5', name: 'Conciertos' },
-            { _id: 'interest-6', name: 'Deportes' }
-          ]),
-          adminInterests: () => of([]),
+          allInterests: () => of(interests),
+          adminInterests: () => of(interests),
           myGroups: () => of([]),
           interestGroups: () => of([]),
           joinGroup: (id: string) => {
@@ -78,7 +80,11 @@ describe('App', () => {
           },
           adminGroups: () => of([]),
           createGroup: () => of({}),
-          createInterest: (name: string) => of({ _id: 'interest-new', name })
+          createInterest: (name: string) => {
+            const created = { _id: 'interest-new', name };
+            interests = [...interests, created];
+            return of(created);
+          }
         } },
         providePrimeNG({ theme: { preset: Aura } }),
         provideRouter([])

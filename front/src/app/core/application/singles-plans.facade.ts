@@ -669,10 +669,21 @@ export class SinglesPlansFacade {
     this.notice.set('');
     try {
       const interest = await firstValueFrom(this.groupsApi.createInterest(name));
-      this.availableGroupInterests.update((interests) =>
-        [...interests, interest].sort((first, second) =>
-          first.name.localeCompare(second.name, 'es'),
-        ),
+      let persisted: InterestItem[] | null = null;
+      try {
+        persisted = await firstValueFrom(this.groupsApi.adminInterests());
+      } catch {
+        // Si la comprobación falla, se mantiene la actualización local del alta.
+      }
+      if (persisted && !persisted.some((item) => item._id === interest._id)) {
+        this.error.set('El interés no se ha guardado. Vuelve a intentarlo.');
+        return;
+      }
+      this.availableGroupInterests.set(
+        persisted ??
+          [...this.availableGroupInterests(), interest].sort((first, second) =>
+            first.name.localeCompare(second.name, 'es'),
+          ),
       );
       this.newInterestName = '';
       this.notice.set(`Interés «${interest.name}» añadido.`);
