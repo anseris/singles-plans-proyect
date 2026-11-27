@@ -25,7 +25,7 @@ const ageRangeSchema = new Schema(
 const eventSchema = new Schema(
   {
     title: { type: String, required: true, trim: true, maxlength: 120 },
-    description: { type: String, required: true, trim: true, maxlength: 5000 },
+    description: { type: String, required: true, trim: true, maxlength: 30000 },
     type: { type: String, enum: ['excursion', 'trip', 'event'], required: true },
     location: { type: String, required: true, trim: true, maxlength: 160 },
     meetingPoint: { type: meetingPointSchema, required: false },

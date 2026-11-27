@@ -1,6 +1,7 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
+import { sanitizeRichText } from '../../shared/utils/rich-text';
 import { AuthService } from '../auth/auth.service';
 import { EventsService } from '../../features/events/data-access/events.service';
 import { GroupsService } from '../../features/groups/data-access/groups.service';
@@ -189,6 +190,7 @@ export class SinglesPlansFacade {
     'Empieza / Termina',
     'Plazas y precio',
     'Descripción',
+    'Vista previa',
   ] as const;
   readonly eventStep = signal(1);
   readonly newEventInterestOptions = signal<string[]>([]);
@@ -700,20 +702,24 @@ export class SinglesPlansFacade {
     this.error.set('');
     this.notice.set('');
     if (!this.newEvent.description.trim()) {
-      this.eventStep.set(10);
+      this.eventStep.set(9);
       this.error.set('La descripción es obligatoria.');
       return null;
     }
     try {
       const editingId = this.editingId();
+      const payload = {
+        ...this.newEvent,
+        description: sanitizeRichText(this.newEvent.description),
+      };
       let savedEvent: EventItem;
       if (editingId) {
         savedEvent = await firstValueFrom(
-          this.eventsApi.update(editingId, this.newEvent, this.isAdmin),
+          this.eventsApi.update(editingId, payload, this.isAdmin),
         );
         this.notice.set('Cambios guardados.');
       } else {
-        savedEvent = await firstValueFrom(this.eventsApi.create(this.newEvent, this.isAdmin));
+        savedEvent = await firstValueFrom(this.eventsApi.create(payload, this.isAdmin));
         this.notice.set(
           this.isAdmin
             ? 'La experiencia ya está publicada en SinglesPlans.'
@@ -846,7 +852,7 @@ export class SinglesPlansFacade {
         this.groupsApi.createGroup({
           ...this.newGroup,
           name: this.newGroup.name.trim(),
-          description: this.newGroup.description.trim(),
+          description: sanitizeRichText(this.newGroup.description),
           city: this.newGroup.city.trim(),
         }),
       );
@@ -942,7 +948,9 @@ export class SinglesPlansFacade {
                     this.newEvent.capacity > 0 &&
                     (this.eventIsFree() ||
                       (Number.isFinite(this.newEvent.price) && this.newEvent.price >= 0))
-                  : true;
+                  : step === 9
+                    ? !!this.newEvent.description.trim()
+                    : true;
     if (!valid) {
       this.error.set(this.eventStepError(step));
       return;
@@ -1143,6 +1151,7 @@ export class SinglesPlansFacade {
       6: 'Indica un rango de edad válido entre 18 y 100 años, o elige cualquier edad.',
       7: 'Selecciona una fecha futura y comprueba que la fecha de fin no sea anterior.',
       8: 'Indica al menos una plaza y un precio válido.',
+      9: 'La descripción es obligatoria.',
     };
     return messages[step] ?? 'Revisa los datos de este paso.';
   }

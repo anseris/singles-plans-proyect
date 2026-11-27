@@ -8,12 +8,13 @@ import { DialogModule } from 'primeng/dialog';
 import { TagModule } from 'primeng/tag';
 import { SinglesPlansFacade } from '../../../../core/application/singles-plans.facade';
 import { UserAvatar } from '../../../../shared/components/user-avatar/user-avatar';
+import { RichText } from '../../../../shared/components/rich-text/rich-text';
 import { EventsService } from '../../data-access/events.service';
 import type { EventDetails } from '../../models/event.model';
 
 @Component({
   selector: 'app-event-detail',
-  imports: [RouterLink, DatePipe, CurrencyPipe, ButtonModule, DialogModule, TagModule, UserAvatar],
+  imports: [RouterLink, DatePipe, CurrencyPipe, ButtonModule, DialogModule, TagModule, UserAvatar, RichText],
   templateUrl: './event-detail.html',
   styleUrl: './event-detail.scss',
 })

@@ -11,7 +11,7 @@ const ageRangeSchema = new Schema(
 const groupSchema = new Schema(
   {
     name: { type: String, required: true, trim: true, maxlength: 100 },
-    description: { type: String, required: true, trim: true, maxlength: 1500 },
+    description: { type: String, required: true, trim: true, maxlength: 10000 },
     city: { type: String, trim: true, maxlength: 120, default: '' },
     ageRange: { type: ageRangeSchema, required: false },
     imageUrl: { type: String, maxlength: 3_000_000, default: '' },

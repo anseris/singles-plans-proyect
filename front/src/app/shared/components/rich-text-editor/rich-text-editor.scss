@@ -1,0 +1,122 @@
+:host { display: block; }
+
+.rte {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #fff;
+  overflow: hidden;
+}
+
+.rte-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px;
+  padding: 7px 8px;
+  border-bottom: 1px solid var(--line);
+  background: #f7faf8;
+}
+
+.rte-toolbar button {
+  display: grid;
+  width: 32px;
+  height: 30px;
+  place-items: center;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: #536868;
+  font-size: 13px;
+}
+
+.rte-toolbar button:hover,
+.rte-toolbar button.active {
+  background: #e7f0ec;
+  color: var(--sea);
+}
+
+.rte-divider {
+  width: 1px;
+  height: 18px;
+  margin: 0 4px;
+  background: var(--line);
+}
+
+.rte-content {
+  min-height: 180px;
+  max-height: 360px;
+  padding: 14px;
+  overflow-y: auto;
+  outline: none;
+  font-size: 14px;
+}
+
+.rte-content:empty::before,
+.rte-content:has(> br:only-child)::before {
+  content: attr(data-placeholder);
+  color: #9aa9a8;
+  pointer-events: none;
+}
+
+.rte-link-row {
+  display: flex;
+  gap: 8px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--line);
+  background: #f7faf8;
+}
+
+.rte-link-row input {
+  flex: 1;
+  min-width: 0;
+  height: 36px;
+  padding: 0 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  font: 500 13px Manrope, sans-serif;
+}
+
+.rte-link-row button {
+  padding: 0 12px;
+  border: 0;
+  border-radius: 8px;
+  background: var(--sea);
+  color: #fff;
+  font-weight: 700;
+}
+
+.rte-link-row .rte-link-cancel {
+  background: transparent;
+  color: var(--muted);
+}
+
+.rte-emoji-panel {
+  display: grid;
+  grid-template-columns: repeat(10, 1fr);
+  gap: 2px;
+  max-height: 176px;
+  padding: 8px;
+  overflow-y: auto;
+  border-bottom: 1px solid var(--line);
+  background: #f7faf8;
+}
+
+.rte-emoji-panel button {
+  height: 30px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  font-size: 17px;
+  line-height: 1;
+}
+
+.rte-emoji-panel button:hover { background: #e7f0ec; }
+
+.rte-counter {
+  display: block;
+  padding: 6px 12px;
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 10px;
+  text-align: right;
+}

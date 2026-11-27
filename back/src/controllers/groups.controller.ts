@@ -7,6 +7,7 @@ import { Group } from '../models/group.model.js';
 import { GroupMembership } from '../models/group-membership.model.js';
 import { User } from '../models/user.model.js';
 import { PlanSettings } from '../models/plan-settings.model.js';
+import { GROUP_DESCRIPTION_MAX, isValidDescription, sanitizeDescription } from '../services/description.js';
 
 export async function getPlanSettings(_req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
@@ -133,7 +134,9 @@ export async function joinGroup(req: AuthenticatedRequest, res: Response, next: 
 export async function createGroup(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
   try {
     const name = typeof req.body['name'] === 'string' ? req.body['name'].trim() : '';
-    const description = typeof req.body['description'] === 'string' ? req.body['description'].trim() : '';
+    const description = isValidDescription(req.body['description'], GROUP_DESCRIPTION_MAX)
+      ? sanitizeDescription(req.body['description'])
+      : '';
     const city = typeof req.body['city'] === 'string' ? req.body['city'].trim() : '';
     const minAge = req.body['minAge'];
     const maxAge = req.body['maxAge'];
@@ -155,7 +158,7 @@ export async function createGroup(req: AuthenticatedRequest, res: Response, next
       imageUrl === '' ||
       (/^data:image\/(?:jpeg|png|webp);base64,[A-Za-z0-9+/]+={0,2}$/.test(imageUrl) &&
         Math.floor((imageUrl.length - imageUrl.indexOf(',') - 1) * 3 / 4) <= 2 * 1024 * 1024);
-    if (!name || !description || name.length > 100 || description.length > 1500 || city.length > 120 || !validAgeRange || !validInterests || !validImage) {
+    if (!name || !description || name.length > 100 || description.length > 10000 || city.length > 120 || !validAgeRange || !validInterests || !validImage) {
       res.status(400).json({ message: 'Revisa el nombre, la descripción, los intereses seleccionados y que la imagen sea válida (máximo 2 MB).' });
       return;
     }
@@ -203,7 +206,9 @@ export async function updateGroup(req: AuthenticatedRequest, res: Response, next
     }
 
     const name = typeof req.body['name'] === 'string' ? req.body['name'].trim() : '';
-    const description = typeof req.body['description'] === 'string' ? req.body['description'].trim() : '';
+    const description = isValidDescription(req.body['description'], GROUP_DESCRIPTION_MAX)
+      ? sanitizeDescription(req.body['description'])
+      : '';
     const city = typeof req.body['city'] === 'string' ? req.body['city'].trim() : '';
     const imageUrl = typeof req.body['imageUrl'] === 'string' ? req.body['imageUrl'] : '';
     const interests = req.body['interests'] ?? [];
@@ -227,7 +232,7 @@ export async function updateGroup(req: AuthenticatedRequest, res: Response, next
       Number(ageRange.max) <= 100 &&
       Number(ageRange.min) <= Number(ageRange.max)
     );
-    if (!name || !description || name.length > 100 || description.length > 1500 || city.length > 120 || !validInterests || !validImage || !validAgeRange) {
+    if (!name || !description || name.length > 100 || description.length > 10000 || city.length > 120 || !validInterests || !validImage || !validAgeRange) {
       res.status(400).json({ message: 'Revisa el nombre, la descripción, los intereses seleccionados y que la imagen sea válida (máximo 2 MB).' });
       return;
     }

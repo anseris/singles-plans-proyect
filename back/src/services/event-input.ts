@@ -1,5 +1,6 @@
 import mongoose from 'mongoose';
 import type { EventTimeOfDay, EventType } from '../models/event.model.js';
+import { EVENT_DESCRIPTION_MAX, isValidDescription, sanitizeDescription } from './description.js';
 
 const eventTypes: readonly EventType[] = ['excursion', 'trip', 'event'];
 
@@ -53,8 +54,7 @@ export function isValidEventInput(input: Record<string, unknown>, allowedTypes: 
   return (
     typeof input['title'] === 'string' &&
     input['title'].trim().length > 0 &&
-    typeof input['description'] === 'string' &&
-    input['description'].trim().length > 0 &&
+    isValidDescription(input['description'], EVENT_DESCRIPTION_MAX) &&
     eventTypes.includes(input['type'] as EventType) &&
     allowedTypes.includes(input['type'] as EventType) &&
     typeof input['location'] === 'string' &&
@@ -91,7 +91,7 @@ export function eventFields(input: Record<string, unknown>) {
     : [];
   return {
     title: String(input['title']).trim(),
-    description: String(input['description']).trim(),
+    description: sanitizeDescription(String(input['description'])),
     type: input['type'] as EventType,
     location: String(input['location']).trim(),
     meetingPoint: input['meetingPoint'] as MeetingPointInput,

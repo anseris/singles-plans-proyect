@@ -123,7 +123,7 @@
               <h2>Sobre nosotros</h2>
             </div>
           </div>
-          <p class="group-detail-description">{{ currentGroup.description }}</p>
+          <app-rich-text class="group-detail-description" [html]="currentGroup.description" />
           @if (currentGroup.interests?.length) {
             <div class="group-detail-interests" aria-label="Intereses del grupo">
               @for (interest of currentGroup.interests; track interest) {

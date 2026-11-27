@@ -8,11 +8,12 @@ import type { GroupDetails, GroupItem } from '../../models/group.model';
 import { SinglesPlansFacade } from '../../../../core/application/singles-plans.facade';
 import { GroupsService } from '../../data-access/groups.service';
 import { UserAvatar } from '../../../../shared/components/user-avatar/user-avatar';
+import { RichText } from '../../../../shared/components/rich-text/rich-text';
 import { EventCard } from '../../../events/components/event-card/event-card';
 
 @Component({
   selector: 'app-group-detail',
-  imports: [ButtonModule, DialogModule, RouterLink, EventCard, UserAvatar],
+  imports: [ButtonModule, DialogModule, RouterLink, EventCard, UserAvatar, RichText],
   templateUrl: './group-detail.html',
   styleUrl: './group-detail.scss'
 })

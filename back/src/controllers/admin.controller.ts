@@ -5,6 +5,7 @@ import { Enrollment } from '../models/enrollment.model.js';
 import { Group } from '../models/group.model.js';
 import { GroupInterest } from '../models/group-interest.model.js';
 import { areValidInterests, eventFields, isValidEventInput } from '../services/event-input.js';
+import { EVENT_DESCRIPTION_MAX, isValidDescription, sanitizeDescription } from '../services/description.js';
 import type { AuthenticatedRequest } from '../middleware/auth.middleware.js';
 import { PlanSettings } from '../models/plan-settings.model.js';
 
@@ -155,6 +156,13 @@ export async function updateEvent(req: Request, res: Response, next: NextFunctio
     const update: Record<string, unknown> = {};
     for (const field of ['title', 'description', 'type', 'location', 'meetingPoint', 'interests', 'ageRange', 'timeOfDay', 'startsAt', 'endsAt', 'price', 'capacity', 'imageUrl']) {
       if (field in req.body) update[field] = req.body[field];
+    }
+    if ('description' in update) {
+      if (!isValidDescription(update['description'], EVENT_DESCRIPTION_MAX)) {
+        res.status(400).json({ message: 'La descripción es obligatoria y no puede superar los 5000 caracteres.' });
+        return;
+      }
+      update['description'] = sanitizeDescription(String(update['description']));
     }
     if ('interests' in req.body && !areValidInterests({ interests: req.body['interests'] })) {
       res.status(400).json({ message: 'Revisa los intereses seleccionados.' });

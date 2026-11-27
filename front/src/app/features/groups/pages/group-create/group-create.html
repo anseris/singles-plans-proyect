@@ -43,7 +43,9 @@
           <button type="button" class="custom-interest-button" [disabled]="!interestDraft.trim()" (click)="createInterest()"><i class="pi pi-plus"></i> Añadir interés</button>
         </div>
       } @else if (vm.groupStep() === 5) {
-        <label>Descripción<textarea name="description" [(ngModel)]="vm.newGroup.description" rows="6" maxlength="1500" required placeholder="¿Qué tipo de experiencias compartiréis?"></textarea></label>
+        <label>Descripción
+          <app-rich-text-editor [(value)]="vm.newGroup.description" [maxLength]="1500" placeholder="Cuenta qué tipo de experiencias compartiréis. Puedes poner texto en negrita, añadir enlaces y emoticonos." />
+        </label>
       } @else if (vm.groupStep() === 6) {
         <fieldset class="group-plan-options">
           <legend>Selecciona tu plan</legend>
@@ -73,7 +75,7 @@
             <p class="eyebrow">GRUPO DE LA COMUNIDAD</p>
             <h2>{{ vm.newGroup.name }}</h2>
             <p class="group-preview-meta"><i class="pi pi-map-marker"></i>{{ vm.newGroup.city || 'Comunidad online' }}</p>
-            <p class="group-preview-description">{{ vm.newGroup.description }}</p>
+            <app-rich-text class="group-preview-description" [html]="vm.newGroup.description" />
             @if (vm.newGroup.interests.length) {
               <div class="group-preview-interests">
                 @for (interest of vm.newGroup.interests; track interest) { <span>{{ interest }}</span> }
@@ -93,7 +95,7 @@
               <p class="eyebrow">GRUPO CREADO</p>
               <h2>{{ group.name }}</h2>
               <p class="group-preview-meta"><i class="pi pi-map-marker"></i>{{ group.city || 'Comunidad online' }}</p>
-              <p class="group-preview-description">{{ group.description }}</p>
+              <app-rich-text class="group-preview-description" [html]="group.description" />
               @if (group.interests?.length) {
                 <div class="group-preview-interests">
                   @for (interest of group.interests; track interest) { <span>{{ interest }}</span> }

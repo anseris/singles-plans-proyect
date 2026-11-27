@@ -1,0 +1,50 @@
+<div class="rte">
+  <div class="rte-toolbar" role="toolbar" aria-label="Formato de la descripción">
+    <button type="button" title="Negrita" aria-label="Negrita" (mousedown)="keepSelection($event)" (click)="format('bold')"><i class="pi pi-bold"></i></button>
+    <button type="button" title="Cursiva" aria-label="Cursiva" (mousedown)="keepSelection($event)" (click)="format('italic')"><i class="pi pi-italic"></i></button>
+    <button type="button" title="Subrayado" aria-label="Subrayado" (mousedown)="keepSelection($event)" (click)="format('underline')"><i class="pi pi-underline"></i></button>
+    <span class="rte-divider"></span>
+    <button type="button" title="Lista con viñetas" aria-label="Lista con viñetas" (mousedown)="keepSelection($event)" (click)="format('insertUnorderedList')"><i class="pi pi-list"></i></button>
+    <button type="button" title="Lista numerada" aria-label="Lista numerada" (mousedown)="keepSelection($event)" (click)="format('insertOrderedList')"><i class="pi pi-sort-numeric-up"></i></button>
+    <span class="rte-divider"></span>
+    <button type="button" title="Añadir enlace" aria-label="Añadir enlace" [class.active]="linkOpen()" (mousedown)="keepSelection($event)" (click)="toggleLink()"><i class="pi pi-link"></i></button>
+    <button type="button" title="Añadir emoticono" aria-label="Añadir emoticono" [class.active]="emojiOpen()" (mousedown)="keepSelection($event)" (click)="toggleEmoji()"><i class="pi pi-smile"></i></button>
+    <span class="rte-divider"></span>
+    <button type="button" title="Quitar formato" aria-label="Quitar formato" (mousedown)="keepSelection($event)" (click)="format('removeFormat')"><i class="pi pi-eraser"></i></button>
+  </div>
+
+  @if (linkOpen()) {
+    <div class="rte-link-row">
+      <input
+        type="url"
+        name="richTextLink"
+        placeholder="https://ejemplo.com"
+        [(ngModel)]="linkUrl"
+        (keydown.enter)="$event.preventDefault(); applyLink()"
+      />
+      <button type="button" (click)="applyLink()">Añadir</button>
+      <button type="button" class="rte-link-cancel" (click)="cancelLink()">Cancelar</button>
+    </div>
+  }
+
+  @if (emojiOpen()) {
+    <div class="rte-emoji-panel" role="group" aria-label="Emoticonos">
+      @for (emoji of emojis; track emoji) {
+        <button type="button" [title]="emoji" (mousedown)="keepSelection($event)" (click)="insertEmoji(emoji)">{{ emoji }}</button>
+      }
+    </div>
+  }
+
+  <div
+    #editor
+    class="rte-content rich-text-content"
+    contenteditable="true"
+    role="textbox"
+    aria-multiline="true"
+    [attr.data-placeholder]="placeholder()"
+    (input)="onInput()"
+    (paste)="onPaste($event)"
+  ></div>
+
+  <small class="rte-counter">{{ plainLength() }} / {{ maxLength() }} caracteres</small>
+</div>

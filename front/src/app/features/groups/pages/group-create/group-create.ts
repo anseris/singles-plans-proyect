@@ -7,12 +7,15 @@ import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
 import { CurrencyPipe } from '@angular/common';
 import { SinglesPlansFacade } from '../../../../core/application/singles-plans.facade';
+import { RichTextEditor } from '../../../../shared/components/rich-text-editor/rich-text-editor';
+import { RichText } from '../../../../shared/components/rich-text/rich-text';
 import type { GroupItem } from '../../models/group.model';
 import { GroupsService } from '../../data-access/groups.service';
+import { sanitizeRichText } from '../../../../shared/utils/rich-text';
 
 @Component({
   selector: 'app-group-create',
-  imports: [FormsModule, ButtonModule, InputTextModule, CurrencyPipe],
+  imports: [FormsModule, ButtonModule, InputTextModule, CurrencyPipe, RichTextEditor, RichText],
   templateUrl: './group-create.html',
   styleUrl: './group-create.scss',
 })
@@ -45,7 +48,7 @@ export class GroupCreatePage {
           this.groupsApi.updateGroup(editingId, {
             ...this.vm.newGroup,
             name: this.vm.newGroup.name.trim(),
-            description: this.vm.newGroup.description.trim(),
+            description: sanitizeRichText(this.vm.newGroup.description),
             city: this.vm.newGroup.city.trim(),
           }),
         );

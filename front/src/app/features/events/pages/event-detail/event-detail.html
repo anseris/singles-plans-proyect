@@ -216,7 +216,7 @@
 
       <section class="event-description-panel">
         <h2>Sobre el evento</h2>
-        <p class="event-description">{{ item.description }}</p>
+        <app-rich-text class="event-description" [html]="item.description" />
       </section>
     </div>
   } @else {
