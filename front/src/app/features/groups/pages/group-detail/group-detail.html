@@ -70,19 +70,6 @@
         >
           Eventos
         </button>
-        @if (isGroupCreator()) {
-          <button
-            id="group-managed-events-tab"
-            type="button"
-            role="tab"
-            aria-controls="group-managed-events-panel"
-            [attr.aria-selected]="activeTab() === 'managed-events'"
-            [class.active]="activeTab() === 'managed-events'"
-            (click)="activeTab.set('managed-events')"
-          >
-            Mis eventos gestionados <span>{{ managedEvents().length }}</span>
-          </button>
-        }
         <button
           id="group-members-tab"
           type="button"
@@ -171,6 +158,19 @@
             >
               Pasados <span>{{ groupDetails.pastEvents.length }}</span>
             </button>
+            @if (managedEvents().length) {
+              <button
+                id="group-managed-events-tab"
+                type="button"
+                role="tab"
+                aria-controls="group-events-panel"
+                [attr.aria-selected]="eventsTab() === 'managed'"
+                [class.active]="eventsTab() === 'managed'"
+                (click)="eventsTab.set('managed')"
+              >
+                Mis eventos gestionados <span>{{ managedEvents().length }}</span>
+              </button>
+            }
           </div>
           @if (eventsTab() === 'upcoming' && groupDetails.upcomingEvents.length) {
             <div class="group-events-grid">
@@ -183,6 +183,12 @@
               <i class="pi pi-calendar"></i>
               <p>No hay próximos eventos publicados en este grupo.</p>
             </div>
+          } @else if (eventsTab() === 'managed') {
+            <div class="group-events-grid">
+              @for (event of managedEvents(); track event._id) {
+                <app-event-card [event]="event" />
+              }
+            </div>
           } @else if (groupDetails.pastEvents.length) {
             <div class="group-events-grid">
               @for (event of groupDetails.pastEvents; track event._id) {
@@ -193,33 +199,6 @@
             <div class="group-detail-empty">
               <i class="pi pi-history"></i>
               <p>Este grupo todavía no tiene eventos pasados.</p>
-            </div>
-          }
-        </section>
-      } @else if (activeTab() === 'managed-events') {
-        <section
-          id="group-managed-events-panel"
-          class="group-detail-section group-tab-panel"
-          role="tabpanel"
-          aria-labelledby="group-managed-events-tab"
-        >
-          <div class="group-section-heading">
-            <div>
-              <p class="eyebrow">TUS EVENTOS</p>
-              <h2>Eventos que gestionas en este grupo</h2>
-            </div>
-            <span>{{ managedEvents().length }}</span>
-          </div>
-          @if (managedEvents().length) {
-            <div class="group-events-grid">
-              @for (event of managedEvents(); track event._id) {
-                <app-event-card [event]="event" />
-              }
-            </div>
-          } @else {
-            <div class="group-detail-empty">
-              <i class="pi pi-calendar"></i>
-              <p>Todavía no has creado eventos en este grupo.</p>
             </div>
           }
         </section>

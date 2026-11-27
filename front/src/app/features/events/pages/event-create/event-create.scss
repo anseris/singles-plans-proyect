@@ -21,9 +21,10 @@
 .event-interest-add { display:grid; grid-template-columns:1fr auto; align-items:end; gap:10px; }
 .event-interest-add button { min-height:48px; padding:0 12px; border:0; border-radius:12px; background:var(--sea); color:white; font-weight:700; }
 .event-date-fields, .event-age-fields { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+.event-fields-with-switch { grid-template-columns:minmax(0,1fr) minmax(0,1fr) auto; align-items:end; gap:12px; }
 .event-age-fields.is-disabled { opacity:.55; }
-.event-switch { display:flex; align-items:center; justify-content:space-between; gap:12px; margin:2px 0 10px; color:var(--ink); font-size:12px; font-weight:700; }
-.event-switch input[type="checkbox"] { appearance:auto; flex:0 0 20px; width:20px; height:20px; margin:0; accent-color:var(--sea); cursor:pointer; }
+.event-switch { display:inline-flex; align-items:center; gap:8px; min-height:48px; padding:0 12px; border:1px solid var(--line); border-radius:10px; background:#f7f8f3; color:var(--ink); font-size:11px; font-weight:700; white-space:nowrap; cursor:pointer; }
+.event-switch input[type="checkbox"] { appearance:auto; flex:0 0 18px; width:18px; height:18px; margin:0; accent-color:var(--sea); cursor:pointer; }
 .event-switch input[type="checkbox"]:focus-visible { outline:2px solid var(--sea); outline-offset:3px; }
 .event-wizard-actions { display:flex; align-items:center; justify-content:flex-end; gap:12px; margin-top:auto; }
 .wizard-text { margin-right:auto; border:0; background:transparent; color:var(--sea); cursor:pointer; font-weight:800; }
@@ -50,6 +51,8 @@
   .event-wizard-progress small { display:none; }
   .event-wizard-card { min-height:380px; padding:24px 18px; }
   .event-date-fields, .event-age-fields { grid-template-columns:1fr; }
+  .event-fields-with-switch { grid-template-columns:minmax(0,1fr) minmax(0,1fr); }
+  .event-fields-with-switch .event-switch { grid-column:1/-1; min-height:40px; }
   .event-interest-add { grid-template-columns:1fr; }
   .event-preview-card { grid-template-columns:1fr; }
   .event-preview-card > img, .event-preview-placeholder { min-height:180px; max-height:220px; }

@@ -29,20 +29,16 @@ export class GroupDetail {
       this.vm.isAdmin || this.vm.user()?.id === details.createdById
     );
   });
-  readonly isGroupCreator = computed(() => {
-    const details = this.details();
-    return !!details && this.vm.user()?.id === details.createdById;
-  });
   readonly managedEvents = computed(() => {
     const group = this.group();
-    if (!group || !this.isGroupCreator()) return [];
+    if (!group) return [];
     return this.vm.myEvents().filter((event) => this.eventGroupId(event) === group._id);
   });
   readonly deleteDialogOpen = signal(false);
   readonly deleteLoading = signal(false);
   readonly deleteError = signal('');
-  readonly activeTab = signal<'about' | 'events' | 'managed-events' | 'members'>('about');
-  readonly eventsTab = signal<'upcoming' | 'past'>('upcoming');
+  readonly activeTab = signal<'about' | 'events' | 'members'>('about');
+  readonly eventsTab = signal<'upcoming' | 'past' | 'managed'>('upcoming');
   readonly selectedUserId = signal('');
   readonly details = signal<GroupDetails | null>(null);
   readonly loading = signal(true);

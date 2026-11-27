@@ -56,10 +56,10 @@
           <button type="button" [disabled]="!eventInterestDraft.trim()" (click)="addEventInterest()"><i class="pi pi-plus"></i> Añadir interés</button>
         </div>
       } @else if (vm.eventStep() === 6) {
-        <label class="event-switch">Cualquier edad<input type="checkbox" name="anyAge" [checked]="vm.eventAnyAge()" (change)="vm.toggleEventAnyAge(!vm.eventAnyAge())" /></label>
-        <div class="event-age-fields" [class.is-disabled]="vm.eventAnyAge()">
+        <div class="event-age-fields event-fields-with-switch" [class.is-disabled]="vm.eventAnyAge()">
           <label>Edad mínima<input pInputText type="number" name="minAge" [disabled]="vm.eventAnyAge()" [ngModel]="vm.eventMinimumAge" (ngModelChange)="vm.eventMinimumAge = $event" /></label>
           <label>Edad máxima<input pInputText type="number" name="maxAge" [disabled]="vm.eventAnyAge()" [ngModel]="vm.eventMaximumAge" (ngModelChange)="vm.eventMaximumAge = $event" /></label>
+          <label class="event-switch">Cualquier edad<input type="checkbox" name="anyAge" [checked]="vm.eventAnyAge()" (change)="vm.toggleEventAnyAge(!vm.eventAnyAge())" /></label>
         </div>
       } @else if (vm.eventStep() === 7) {
         <div class="event-date-fields">
@@ -67,11 +67,11 @@
           <label>Termina<input pInputText type="datetime-local" name="endsAt" [(ngModel)]="vm.newEvent.endsAt" /></label>
         </div>
       } @else if (vm.eventStep() === 8) {
-        <div class="event-date-fields">
+        <div class="event-date-fields event-fields-with-switch">
           <label>Plazas<input pInputText type="number" name="capacity" [(ngModel)]="vm.newEvent.capacity" /></label>
           <label>Precio (€)<input pInputText type="number" name="price" [disabled]="vm.eventIsFree()" [ngModel]="vm.newEvent.price" (ngModelChange)="vm.newEvent.price = $event" /></label>
+          <label class="event-switch">Gratis<input type="checkbox" name="isFree" [checked]="vm.eventIsFree()" (change)="vm.toggleEventFree(!vm.eventIsFree())" /></label>
         </div>
-        <label class="event-switch">Gratis<input type="checkbox" name="isFree" [checked]="vm.eventIsFree()" (change)="vm.toggleEventFree(!vm.eventIsFree())" /></label>
       } @else if (vm.eventStep() === 9) {
         <label>Descripción
           <app-rich-text-editor [(value)]="vm.newEvent.description" [maxLength]="5000" placeholder="Cuenta de qué va el evento. Puedes poner texto en negrita, añadir enlaces y emoticonos." />
