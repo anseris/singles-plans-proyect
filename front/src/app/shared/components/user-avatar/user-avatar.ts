@@ -1,4 +1,4 @@
-import { Component, computed, input, signal } from '@angular/core';
+import { Component, computed, input, output, signal } from '@angular/core';
 
 @Component({
   selector: 'app-user-avatar',
@@ -9,6 +9,9 @@ export class UserAvatar {
   readonly name = input.required<string>();
   readonly avatarUrl = input<string>('');
   readonly size = input<'small' | 'medium' | 'large'>('medium');
+  readonly zoomable = input(false);
+
+  readonly imageClick = output<string>();
 
   readonly imageFailed = signal(false);
   readonly initial = computed(() => {
@@ -24,8 +27,15 @@ export class UserAvatar {
     return apiOrigin && url.startsWith('/') ? `${apiOrigin}${url}` : url;
   });
   readonly showImage = computed(() => Boolean(this.resolvedUrl()) && !this.imageFailed());
+  readonly canZoom = computed(() => this.zoomable() && this.showImage());
 
   onImageError(): void {
     this.imageFailed.set(true);
+  }
+
+  onImageClick(event?: Event): void {
+    if (!this.canZoom()) return;
+    event?.preventDefault();
+    this.imageClick.emit(this.resolvedUrl());
   }
 }

@@ -1,4 +1,4 @@
-import { Component, computed, effect, inject, input, output, signal } from '@angular/core';
+import { Component, computed, effect, HostListener, inject, input, output, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { UiDialog } from '../../design-system';
 import { firstValueFrom } from 'rxjs';
@@ -29,6 +29,7 @@ export class UserInfo {
   readonly profile = signal<PublicUserProfile | null>(null);
   readonly loading = signal(false);
   readonly error = signal('');
+  readonly expandedAvatarUrl = signal('');
   readonly memberSince = computed(() => {
     const value = this.profile()?.memberSince;
     if (!value) return '';
@@ -46,11 +47,13 @@ export class UserInfo {
         this.profile.set(null);
         this.loading.set(false);
         this.error.set('');
+        this.expandedAvatarUrl.set('');
         return;
       }
       this.profile.set(null);
       this.loading.set(true);
       this.error.set('');
+      this.expandedAvatarUrl.set('');
       void firstValueFrom(this.usersApi.userById(id))
         .then((profile) => {
           if (currentRequest !== this.requestId) return;
@@ -79,6 +82,23 @@ export class UserInfo {
   }
 
   close(): void {
+    if (this.expandedAvatarUrl()) {
+      this.expandedAvatarUrl.set('');
+      return;
+    }
     this.closed.emit();
+  }
+
+  expandAvatar(url: string): void {
+    this.expandedAvatarUrl.set(url);
+  }
+
+  closeAvatar(): void {
+    this.expandedAvatarUrl.set('');
+  }
+
+  @HostListener('document:keydown.escape')
+  onEscape(): void {
+    this.closeAvatar();
   }
 }

@@ -3,8 +3,13 @@
   [class.user-avatar-small]="size() === 'small'"
   [class.user-avatar-medium]="size() === 'medium'"
   [class.user-avatar-large]="size() === 'large'"
-  role="img"
-  [attr.aria-label]="'Avatar de ' + name()"
+  [class.user-avatar-zoomable]="canZoom()"
+  [attr.role]="canZoom() ? 'button' : 'img'"
+  [attr.aria-label]="canZoom() ? 'Ampliar imagen de ' + name() : 'Avatar de ' + name()"
+  [attr.tabindex]="canZoom() ? 0 : null"
+  (click)="onImageClick($event)"
+  (keydown.enter)="onImageClick($event)"
+  (keydown.space)="onImageClick($event)"
 >
   @if (showImage()) {
     <img [src]="resolvedUrl()" [alt]="'Avatar de ' + name()" (error)="onImageError()" />

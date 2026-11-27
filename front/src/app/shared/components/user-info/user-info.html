@@ -3,6 +3,7 @@
   (visibleChange)="!$event && close()"
   [header]="isSelf() ? 'Mi información' : 'Información de la persona'"
   [modal]="true"
+  [closeOnEscape]="!expandedAvatarUrl()"
   [draggable]="false"
   [resizable]="false"
   styleClass="user-info-dialog"
@@ -14,7 +15,13 @@
   } @else if (profile(); as person) {
     <div class="user-info-profile">
       <header class="user-info-header">
-        <app-user-avatar [name]="person.name" [avatarUrl]="person.avatarUrl" size="large" />
+        <app-user-avatar
+          [name]="person.name"
+          [avatarUrl]="person.avatarUrl"
+          size="large"
+          [zoomable]="true"
+          (imageClick)="expandAvatar($event)"
+        />
         <div>
           <h2>{{ person.name }}</h2>
           @if (memberSince()) { <small>Miembro desde {{ memberSince() }}</small> }
@@ -72,3 +79,23 @@
     </div>
   }
 </p-dialog>
+
+@if (expandedAvatarUrl(); as imageUrl) {
+  <div
+    class="avatar-lightbox"
+    role="dialog"
+    aria-modal="true"
+    aria-label="Imagen ampliada"
+    (click)="closeAvatar()"
+  >
+    <button class="avatar-lightbox-close" type="button" aria-label="Cerrar imagen" (click)="closeAvatar()">
+      <i class="pi pi-times" aria-hidden="true"></i>
+    </button>
+    <img
+      class="avatar-lightbox-image"
+      [src]="imageUrl"
+      [alt]="'Imagen de ' + (profile()?.name ?? 'la persona')"
+      (click)="$event.stopPropagation()"
+    />
+  </div>
+}

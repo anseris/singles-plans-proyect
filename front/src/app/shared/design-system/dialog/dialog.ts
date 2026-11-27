@@ -39,6 +39,7 @@ export class UiDialog {
   readonly header = input('');
   readonly styleClass = input('');
   readonly dismissableMask = input(false);
+  readonly closeOnEscape = input(true);
   readonly modal = input(true);
   readonly draggable = input(false);
   readonly resizable = input(false);
@@ -55,6 +56,6 @@ export class UiDialog {
 
   @HostListener('document:keydown.escape')
   onEscape(): void {
-    if (this.visible()) this.close();
+    if (this.visible() && this.closeOnEscape()) this.close();
   }
 }
