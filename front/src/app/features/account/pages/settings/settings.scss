@@ -4,7 +4,7 @@
 .avatar-edit { position: relative; display: inline-flex; border-radius: 50%; cursor: pointer; }
 .avatar-edit-badge { position: absolute; right: -2px; bottom: -2px; display: grid; place-items: center; width: 32px; height: 32px; border: 3px solid #fff; border-radius: 50%; background: var(--sea); color: #fff; font-size: 12px; }
 .file-input { display: none; }
-.settings-identity h1 { margin: 4px 0 8px; font: 800 clamp(24px, 4vw, 32px) Manrope, sans-serif; letter-spacing: -1.2px; }
+.settings-identity h1 { margin: 4px 0 8px; font: 800 clamp(24px, 4vw, 32px) Fraunces, sans-serif; letter-spacing: -1.2px; }
 .role-badge { display: inline-flex; align-items: center; gap: 7px; padding: 6px 11px; border-radius: 999px; background: #edf3ee; color: var(--sea); font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .6px; }
 .remove-avatar { margin-left: auto; padding: 8px 12px; border: 1px solid #e7bdbd; border-radius: 999px; background: #fff; color: #8d3939; font-size: 12px; font-weight: 700; }
 .avatar-hint { display: block; margin: 10px 0 2px; color: var(--muted); font-size: 11px; }
@@ -13,9 +13,9 @@
 .settings-tabs button.active { border-bottom-color: var(--sea); color: var(--sea); }
 .settings-panel { min-height: 260px; }
 .settings-section-heading { margin-bottom: 18px; }
-.settings-section-heading h2 { margin: 0 0 4px; font: 800 19px Manrope, sans-serif; }
+.settings-section-heading h2 { margin: 0 0 4px; font: 800 19px Fraunces, sans-serif; }
 .settings-section-heading p { margin: 0; color: var(--muted); font-size: 12px; }
-.settings-subheading { margin: 0 0 12px; font: 800 14px Manrope, sans-serif; }
+.settings-subheading { margin: 0 0 12px; font: 800 14px Fraunces, sans-serif; }
 .settings-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
 .settings-field { display: grid; gap: 7px; min-width: 0; }
 .settings-field.full { grid-column: 1/-1; }

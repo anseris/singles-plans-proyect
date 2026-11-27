@@ -3,8 +3,7 @@ import { FormsModule } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
 import { ActivatedRoute, Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
-import { ButtonModule } from 'primeng/button';
-import { InputTextModule } from 'primeng/inputtext';
+import { UiButton, UiInputText } from '../../../../shared/design-system';
 import { CurrencyPipe } from '@angular/common';
 import { SinglesPlansFacade } from '../../../../core/application/singles-plans.facade';
 import { GroupDetailView } from '../../../../shared/components/group-detail-view/group-detail-view';
@@ -15,7 +14,7 @@ import { sanitizeRichText } from '../../../../shared/utils/rich-text';
 
 @Component({
   selector: 'app-group-create',
-  imports: [FormsModule, ButtonModule, InputTextModule, CurrencyPipe, RichTextEditor, GroupDetailView],
+  imports: [FormsModule, UiButton, UiInputText, CurrencyPipe, RichTextEditor, GroupDetailView],
   templateUrl: './group-create.html',
   styleUrl: './group-create.scss',
 })

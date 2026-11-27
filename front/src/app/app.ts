@@ -1,11 +1,7 @@
 import { Component, OnInit, inject, viewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterOutlet } from '@angular/router';
-import { ButtonModule } from 'primeng/button';
-import { CheckboxModule } from 'primeng/checkbox';
-import { DialogModule } from 'primeng/dialog';
-import { InputTextModule } from 'primeng/inputtext';
-import { PasswordModule } from 'primeng/password';
+import { UiButton, UiCheckbox, UiDialog, UiInputText, UiPassword } from './shared/design-system';
 import { SiteHeader } from './layout/site-header/site-header';
 import { SinglesPlansFacade } from './core/application/singles-plans.facade';
 import { SiteFooter } from './shared/components/site-footer/site-footer';
@@ -15,15 +11,15 @@ import { TurnstileWidget } from './shared/components/turnstile-widget/turnstile-
   selector: 'app-root',
   imports: [
     FormsModule,
-    ButtonModule,
-    CheckboxModule,
-    DialogModule,
-    InputTextModule,
-    PasswordModule,
     RouterOutlet,
     SiteHeader,
     SiteFooter,
     TurnstileWidget,
+    UiButton,
+    UiCheckbox,
+    UiDialog,
+    UiInputText,
+    UiPassword,
   ],
   templateUrl: './app.html',
   styleUrl: './app.scss'

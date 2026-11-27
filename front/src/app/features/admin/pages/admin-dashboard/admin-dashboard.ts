@@ -1,15 +1,13 @@
 import { Component, inject, input, output } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { ButtonModule } from 'primeng/button';
-import { InputTextModule } from 'primeng/inputtext';
-import { TagModule } from 'primeng/tag';
+import { UiButton, UiInputText, UiTag } from '../../../../shared/design-system';
 import type { EventItem, EventStatus } from '../../../events/models/event.model';
 import type { GroupItem, InterestItem } from '../../../groups/models/group.model';
 import { SinglesPlansFacade } from '../../../../core/application/singles-plans.facade';
 
 @Component({
   selector: 'app-admin-dashboard',
-  imports: [FormsModule, ButtonModule, InputTextModule, TagModule],
+  imports: [FormsModule, UiButton, UiInputText, UiTag],
   templateUrl: './admin-dashboard.html',
   styleUrl: './admin-dashboard.scss'
 })

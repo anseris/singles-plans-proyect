@@ -1,11 +1,11 @@
 import { Component, computed, ElementRef, input, output, signal, viewChild } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { ButtonModule } from 'primeng/button';
+import { UiButton } from '../../../../shared/design-system';
 import type { GroupItem } from '../../models/group.model';
 
 @Component({
   selector: 'app-group-collection',
-  imports: [ButtonModule, RouterLink],
+  imports: [UiButton, RouterLink],
   templateUrl: './group-collection.html',
   styleUrl: './group-collection.scss'
 })

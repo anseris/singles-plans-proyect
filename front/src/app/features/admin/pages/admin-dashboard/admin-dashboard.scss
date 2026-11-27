@@ -4,7 +4,7 @@
 .group-chip { display: flex; align-items: center; gap: 10px; min-width: 190px; padding: 10px 13px; border: 1px solid var(--line); border-radius: 12px; background: var(--paper); }
 .group-avatar { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 11px; background: #e7f0ec; color: var(--sea); }
 .group-chip strong,.group-chip small { display: block; }
-.group-chip strong { color: var(--ink); font: 700 11px Manrope,sans-serif; }
+.group-chip strong { color: var(--ink); font: 700 11px Fraunces,sans-serif; }
 .group-chip small { margin-top: 4px; color: var(--muted); font-size: 9px; }
 .interest-create-form { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 16px; }
 .interest-create-form input { flex: 1 1 220px; min-width: 0; }

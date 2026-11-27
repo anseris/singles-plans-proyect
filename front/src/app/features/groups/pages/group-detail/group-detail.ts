@@ -2,8 +2,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { Component, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
-import { ButtonModule } from 'primeng/button';
-import { DialogModule } from 'primeng/dialog';
+import { UiButton, UiDialog } from '../../../../shared/design-system';
 import type { GroupDetails, GroupItem } from '../../models/group.model';
 import type { EventItem } from '../../../events/models/event.model';
 import { SinglesPlansFacade } from '../../../../core/application/singles-plans.facade';
@@ -16,7 +15,7 @@ import { EventCard } from '../../../events/components/event-card/event-card';
 
 @Component({
   selector: 'app-group-detail',
-  imports: [ButtonModule, DialogModule, RouterLink, EventCard, UserAvatar, GroupDetailView, UserInfo, RichText],
+  imports: [UiButton, UiDialog, RouterLink, EventCard, UserAvatar, GroupDetailView, UserInfo, RichText],
   templateUrl: './group-detail.html',
   styleUrl: './group-detail.scss'
 })

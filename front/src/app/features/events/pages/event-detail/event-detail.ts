@@ -2,9 +2,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { Component, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
-import { ButtonModule } from 'primeng/button';
-import { DialogModule } from 'primeng/dialog';
-import { TagModule } from 'primeng/tag';
+import { UiButton, UiDialog, UiTag } from '../../../../shared/design-system';
 import { SinglesPlansFacade } from '../../../../core/application/singles-plans.facade';
 import { EventDetailView } from '../../../../shared/components/event-detail-view/event-detail-view';
 import { UserInfo } from '../../../../shared/components/user-info/user-info';
@@ -13,7 +11,7 @@ import type { EventDetails } from '../../models/event.model';
 
 @Component({
   selector: 'app-event-detail',
-  imports: [RouterLink, ButtonModule, DialogModule, TagModule, EventDetailView, UserInfo],
+  imports: [RouterLink, UiButton, UiDialog, UiTag, EventDetailView, UserInfo],
   templateUrl: './event-detail.html',
   styleUrl: './event-detail.scss',
 })

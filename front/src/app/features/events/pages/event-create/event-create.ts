@@ -2,9 +2,7 @@ import { Component, computed, inject, signal } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
-import { ButtonModule } from 'primeng/button';
-import { InputTextModule } from 'primeng/inputtext';
-import { DialogModule } from 'primeng/dialog';
+import { UiButton, UiDialog, UiInputText } from '../../../../shared/design-system';
 import { firstValueFrom } from 'rxjs';
 import { GooglePlaceAutocompleteDirective } from '../../directives/google-place-autocomplete.directive';
 import { SinglesPlansFacade } from '../../../../core/application/singles-plans.facade';
@@ -17,9 +15,9 @@ import type { EventItem } from '../../models/event.model';
   selector: 'app-event-create',
   imports: [
     FormsModule,
-    ButtonModule,
-    InputTextModule,
-    DialogModule,
+    UiButton,
+    UiInputText,
+    UiDialog,
     GooglePlaceAutocompleteDirective,
     EventDetailView,
     RichTextEditor,

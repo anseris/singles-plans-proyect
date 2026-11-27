@@ -11,7 +11,7 @@
 
 .wizard-heading h1 {
   margin: 8px 0;
-  font: 800 42px/1.05 Manrope, sans-serif;
+  font: 800 42px/1.05 Fraunces, sans-serif;
 }
 
 .wizard-heading p:last-child {
@@ -107,7 +107,7 @@
   border-radius: 12px;
   background: #fff;
   color: var(--ink);
-  font: 500 14px Manrope, sans-serif;
+  font: 500 14px Fraunces, sans-serif;
   text-transform: none;
   letter-spacing: 0;
 }
@@ -193,7 +193,7 @@
 }
 
 .group-preview-wrap { display:grid; gap:10px; padding:4px 0 10px; }
-.group-preview-wrap .eyebrow { margin:0; color:var(--sea); font:800 11px Manrope,sans-serif; letter-spacing:.08em; }
+.group-preview-wrap .eyebrow { margin:0; color:var(--sea); font:800 11px Fraunces,sans-serif; letter-spacing:.08em; }
 .group-detail-card { display:grid; grid-template-columns:minmax(220px,35%) 1fr; overflow:hidden; border:1px solid var(--line); border-radius:18px; background:white; }
 .group-preview-card {
   display: grid;
@@ -217,7 +217,7 @@
   place-items: center;
   background: #e7f0ec;
   color: var(--sea);
-  font: 800 68px Manrope, sans-serif;
+  font: 800 68px Fraunces, sans-serif;
 }
 
 .group-preview-content {
@@ -227,7 +227,7 @@
 
 .group-preview-content h2 {
   margin: 8px 0 12px;
-  font: 800 30px Manrope, sans-serif;
+  font: 800 30px Fraunces, sans-serif;
 }
 
 .group-preview-meta {
@@ -341,7 +341,7 @@
 }
 
 .group-plan-card .plan-name {
-  font: 800 21px Manrope, sans-serif;
+  font: 800 21px Fraunces, sans-serif;
 }
 
 .group-plan-card strong {

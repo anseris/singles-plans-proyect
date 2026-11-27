@@ -1,6 +1,6 @@
 import { Component, computed, effect, inject, input, output, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { DialogModule } from 'primeng/dialog';
+import { UiDialog } from '../../design-system';
 import { firstValueFrom } from 'rxjs';
 import { AuthService } from '../../../core/auth/auth.service';
 import { UsersService } from '../../../features/account/data-access/users.service';
@@ -9,7 +9,7 @@ import { UserAvatar } from '../user-avatar/user-avatar';
 
 @Component({
   selector: 'app-user-info',
-  imports: [DialogModule, RouterLink, UserAvatar],
+  imports: [UiDialog, RouterLink, UserAvatar],
   templateUrl: './user-info.html',
   styleUrl: './user-info.scss',
 })

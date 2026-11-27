@@ -1,7 +1,7 @@
 import { DatePipe } from '@angular/common';
 import { Component, computed, input, output } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { ButtonModule } from 'primeng/button';
+import { UiButton } from '../../../../shared/design-system';
 import type { EventListView } from '../../../../core/application/singles-plans.facade';
 import type { EventItem } from '../../models/event.model';
 import type { GroupItem } from '../../../groups/models/group.model';
@@ -11,7 +11,7 @@ import { groupEventsByDay } from '../../utils/group-events-by-day';
 
 @Component({
   selector: 'app-events-page',
-  imports: [ButtonModule, DatePipe, EventCard, GroupCollection, RouterLink],
+  imports: [UiButton, DatePipe, EventCard, GroupCollection, RouterLink],
   templateUrl: './events-page.html',
   styleUrl: './events-page.scss'
 })

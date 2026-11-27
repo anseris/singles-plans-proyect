@@ -1,12 +1,12 @@
 import { Component, ElementRef, HostListener, inject, input, output, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { ButtonModule } from 'primeng/button';
+import { UiButton } from '../../shared/design-system';
 import type { AppUser } from '../../core/auth/auth.service';
 import { UserAvatar } from '../../shared/components/user-avatar/user-avatar';
 
 @Component({
   selector: 'app-site-header',
-  imports: [ButtonModule, RouterLink, UserAvatar],
+  imports: [UiButton, RouterLink, UserAvatar],
   templateUrl: './site-header.html',
   styleUrl: './site-header.scss',
 })

@@ -2,14 +2,13 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { Component, OnInit, computed, inject, signal, viewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
-import { ButtonModule } from 'primeng/button';
-import { PasswordModule } from 'primeng/password';
+import { UiButton, UiPassword } from '../../../../shared/design-system';
 import { AuthService } from '../../../../core/auth/auth.service';
 import { TurnstileWidget } from '../../../../shared/components/turnstile-widget/turnstile-widget';
 
 @Component({
   selector: 'app-reset-password',
-  imports: [FormsModule, ButtonModule, PasswordModule, RouterLink, TurnstileWidget],
+  imports: [FormsModule, UiButton, UiPassword, RouterLink, TurnstileWidget],
   templateUrl: './reset-password.html',
   styleUrl: './reset-password.scss',
 })

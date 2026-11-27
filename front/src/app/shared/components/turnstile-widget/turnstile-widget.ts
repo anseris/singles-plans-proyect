@@ -10,7 +10,7 @@ import {
   viewChild,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { CheckboxModule } from 'primeng/checkbox';
+import { UiCheckbox } from '../../design-system';
 
 let turnstileScriptPromise: Promise<void> | null = null;
 
@@ -47,7 +47,7 @@ function loadTurnstileScript(): Promise<void> {
 
 @Component({
   selector: 'app-turnstile-widget',
-  imports: [FormsModule, CheckboxModule],
+  imports: [FormsModule, UiCheckbox],
   templateUrl: './turnstile-widget.html',
   styleUrl: './turnstile-widget.scss',
 })
