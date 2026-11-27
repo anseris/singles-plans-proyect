@@ -98,6 +98,127 @@
 
 .user-greeting { color: var(--muted); font-size: 13px; }
 
+// Diálogo de autenticación
+.auth-dialog {
+  .dialog-subtitle {
+    margin: 0 0 18px;
+    color: var(--muted);
+    font-size: 13px;
+    line-height: 1.6;
+  }
+
+  .sp-button-host { width: 100%; }
+  .sp-button { width: 100%; min-height: 46px; }
+
+  .auth-social {
+    display: grid;
+    gap: 10px;
+    margin-bottom: 18px;
+  }
+
+  .auth-social-btn.sp-button {
+    border-color: var(--line);
+    background: #fff;
+    color: var(--night);
+    box-shadow: none;
+    font-weight: 600;
+
+    &:hover:not(:disabled) {
+      border-color: var(--ocean);
+      background: #f2f8f6;
+      color: var(--ocean);
+      box-shadow: none;
+    }
+  }
+
+  .auth-social-google .pi { color: #4285f4; }
+  .auth-social-apple .pi { color: var(--night); }
+  .auth-social-facebook .pi { color: #1877f2; }
+
+  .auth-divider {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 18px 0;
+    color: var(--muted);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+
+    &::before,
+    &::after {
+      height: 1px;
+      flex: 1;
+      background: var(--line);
+      content: '';
+    }
+  }
+
+  .auth-form { display: grid; gap: 14px; }
+
+  .auth-field {
+    display: grid;
+    gap: 6px;
+    color: var(--night);
+    font-size: 12px;
+    font-weight: 700;
+  }
+
+  .field-error {
+    color: var(--danger);
+    font-size: 11px;
+    font-weight: 500;
+  }
+
+  .auth-check-group { display: grid; gap: 10px; }
+  .auth-check-row { display: flex; align-items: center; gap: 10px; }
+
+  .auth-check-label {
+    color: var(--muted);
+    font-size: 12px;
+    cursor: pointer;
+  }
+
+  .auth-links {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 8px;
+    margin-top: 16px;
+  }
+
+  .auth-links button,
+  .auth-switch button,
+  .auth-legal-link {
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: var(--ocean);
+    font: inherit;
+    font-weight: 700;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+
+    &:hover { color: #0a6261; }
+  }
+
+  .auth-switch {
+    margin: 18px 0 0;
+    color: var(--muted);
+    font-size: 12px;
+    text-align: center;
+  }
+
+  .auth-legal {
+    margin: 16px 0 0;
+    color: var(--muted);
+    font-size: 11px;
+    line-height: 1.7;
+    text-align: center;
+  }
+}
+
 // Hero de descubrimiento
 .hero {
   position: relative;
@@ -698,12 +819,18 @@
   display: inline-flex;
   align-items: center;
   gap: 8px;
+  padding: 0;
+  border: 0;
   margin-bottom: 18px;
+  background: transparent;
   color: var(--ocean);
+  font: inherit;
   font-size: 12px;
   font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 3px;
 
-  &:hover { color: var(--coral); }
+  &:hover { color: #0a6261; }
 }
 
 .community-groups .section-heading { margin-bottom: 20px; }
