@@ -62,7 +62,16 @@
     </div>
     <p class="group-help">Añade opciones que las personas podrán seleccionar al crear su grupo.</p>
     <form class="interest-create-form" (ngSubmit)="createInterest()">
-      <input pInputText name="interestName" [(ngModel)]="interestDraft" maxlength="40" required placeholder="Ej. Senderismo" aria-label="Nombre del interés" />
+      <input
+        pInputText
+        name="interestName"
+        [value]="interestDraft"
+        (input)="interestDraft = $any($event.target).value"
+        maxlength="40"
+        required
+        placeholder="Ej. Senderismo"
+        aria-label="Nombre del interés"
+      />
       <p-button label="Añadir interés" icon="pi pi-plus" type="submit" [disabled]="!interestDraft.trim()" />
     </form>
     @if (interests().length > 0) {
