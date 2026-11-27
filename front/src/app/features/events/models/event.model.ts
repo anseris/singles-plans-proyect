@@ -44,6 +44,7 @@ export interface EventAttendee {
   id: string;
   name: string;
   avatarUrl?: string;
+  status: 'active' | 'cancelled';
 }
 
 export interface EventCreateInput {

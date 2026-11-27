@@ -159,7 +159,7 @@
           <p-tag value="Evento cancelado" severity="danger" />
         } @else if (canManageEvent()) {
           <p class="detail-owner-note">
-            {{ item.isCreator ? 'Este es tu evento' : 'Gestionas este evento' }}
+            Este es tu evento
             @if (item.status === 'pending') { y está pendiente de aprobación. }
           </p>
         } @else if (item.isEnrolled) {

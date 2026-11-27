@@ -22,11 +22,11 @@ export async function listPublic(req: AuthenticatedRequest, res: Response, next:
     const events = await Event.find(filter).populate('group', 'name city').sort({ startsAt: 1 }).lean();
     const [counts, enrolledEventIds] = await Promise.all([
       Enrollment.aggregate([
-        { $match: { event: { $in: events.map((event) => event._id) } } },
+        { $match: { event: { $in: events.map((event) => event._id) }, status: { $ne: 'cancelled' } } },
         { $group: { _id: '$event', count: { $sum: 1 } } }
       ]),
       req.auth?.userId
-        ? Enrollment.find({ user: req.auth.userId, event: { $in: events.map((event) => event._id) } }).distinct('event')
+        ? Enrollment.find({ user: req.auth.userId, event: { $in: events.map((event) => event._id) }, status: { $ne: 'cancelled' } }).distinct('event')
         : Promise.resolve([])
     ]);
     const countByEvent = new Map(counts.map((entry) => [String(entry['_id']), entry['count'] as number]));
@@ -45,7 +45,7 @@ export async function listMine(req: AuthenticatedRequest, res: Response, next: N
   try {
     const [created, enrollments] = await Promise.all([
       Event.find({ createdBy: req.auth?.userId }).populate('group', 'name city').sort({ createdAt: -1 }).lean(),
-      Enrollment.find({ user: req.auth?.userId }).populate({ path: 'event', populate: { path: 'group', select: 'name city' } }).sort({ createdAt: -1 }).lean()
+      Enrollment.find({ user: req.auth?.userId, status: { $ne: 'cancelled' } }).populate({ path: 'event', populate: { path: 'group', select: 'name city' } }).sort({ createdAt: -1 }).lean()
     ]);
     const enrolled = enrollments.flatMap((enrollment) => {
       const event = enrollment.event as { _id?: unknown } | null;
@@ -79,8 +79,10 @@ export async function getEventDetails(req: AuthenticatedRequest, res: Response, 
       return;
     }
     const [enrollment, enrolledCount] = await Promise.all([
-      req.auth?.userId ? Enrollment.exists({ event: event._id, user: req.auth.userId }) : null,
-      Enrollment.countDocuments({ event: event._id })
+      req.auth?.userId
+        ? Enrollment.exists({ event: event._id, user: req.auth.userId, status: { $ne: 'cancelled' } })
+        : null,
+      Enrollment.countDocuments({ event: event._id, status: { $ne: 'cancelled' } })
     ]);
     res.json({
       ...event,
@@ -119,7 +121,12 @@ export async function listEventAttendees(req: AuthenticatedRequest, res: Respons
     const attendees = enrollments.flatMap((enrollment) => {
       const user = enrollment.user as { _id?: unknown; name?: string; avatarUrl?: string } | null;
       return user
-        ? [{ id: String(user._id), name: user.name ?? '', avatarUrl: user.avatarUrl ?? '' }]
+        ? [{
+            id: String(user._id),
+            name: user.name ?? '',
+            avatarUrl: user.avatarUrl ?? '',
+            status: enrollment.status === 'cancelled' ? 'cancelled' : 'active'
+          }]
         : [];
     });
     res.json(attendees);
@@ -268,6 +275,15 @@ export async function enroll(req: AuthenticatedRequest, res: Response, next: Nex
       res.status(404).json({ message: 'Este plan ya no está disponible.' });
       return;
     }
+    const alreadyEnrolled = await Enrollment.exists({
+      event: event._id,
+      user: req.auth?.userId,
+      status: { $ne: 'cancelled' }
+    });
+    if (alreadyEnrolled) {
+      res.status(409).json({ message: 'Ya tienes una plaza en este plan.' });
+      return;
+    }
     const reserved = await Event.findOneAndUpdate(
       { _id: event.id, status: 'published', $expr: { $lt: ['$enrolledCount', '$capacity'] } },
       { $inc: { enrolledCount: 1 } },
@@ -277,10 +293,13 @@ export async function enroll(req: AuthenticatedRequest, res: Response, next: Nex
       res.status(409).json({ message: 'No quedan plazas para este plan.' });
       return;
     }
-    let enrollmentCreated = false;
     try {
-      await Enrollment.create({ event: event.id, user: req.auth?.userId });
-      enrollmentCreated = true;
+      // Si la persona se había desapuntado, se reactiva su reserva anterior.
+      await Enrollment.findOneAndUpdate(
+        { event: event.id, user: req.auth?.userId },
+        { $set: { status: 'active' } },
+        { upsert: true, new: true, runValidators: true }
+      );
       if (req.body['joinGroup'] === true) {
         await GroupMembership.updateOne(
           { group: event.group, user: req.auth?.userId },
@@ -289,7 +308,6 @@ export async function enroll(req: AuthenticatedRequest, res: Response, next: Nex
         );
       }
     } catch (error) {
-      if (enrollmentCreated) await Enrollment.deleteOne({ event: event.id, user: req.auth?.userId });
       await Event.updateOne({ _id: event.id }, { $inc: { enrolledCount: -1 } });
       if (typeof error === 'object' && error !== null && 'code' in error && error.code === 11000) {
         res.status(409).json({ message: 'Ya tienes una plaza en este plan.' });
@@ -326,10 +344,11 @@ export async function unenroll(req: AuthenticatedRequest, res: Response, next: N
       return;
     }
 
-    const enrollment = await Enrollment.findOneAndDelete({
-      event: event._id,
-      user: req.auth?.userId
-    });
+    const enrollment = await Enrollment.findOneAndUpdate(
+      { event: event._id, user: req.auth?.userId, status: { $ne: 'cancelled' } },
+      { $set: { status: 'cancelled' } },
+      { new: true }
+    );
     if (!enrollment) {
       res.status(404).json({ message: 'No tienes una plaza reservada en este evento.' });
       return;
@@ -340,7 +359,7 @@ export async function unenroll(req: AuthenticatedRequest, res: Response, next: N
       { $inc: { enrolledCount: -1 } }
     );
     if (countUpdate.modifiedCount === 0) {
-      await Enrollment.create({ event: event._id, user: req.auth?.userId });
+      await Enrollment.updateOne({ _id: enrollment._id }, { $set: { status: 'active' } });
       res.status(409).json({ message: 'No se pudo actualizar el aforo. Tu reserva se ha mantenido.' });
       return;
     }

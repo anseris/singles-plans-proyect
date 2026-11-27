@@ -1,4 +1,4 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { UserAvatar } from '../../../../shared/components/user-avatar/user-avatar';
@@ -17,6 +17,16 @@ export class EventAttendeesPage {
   readonly eventId = signal('');
   readonly eventTitle = signal('');
   readonly attendees = signal<EventAttendee[]>([]);
+  readonly activeTab = signal<'active' | 'cancelled'>('active');
+  readonly activeAttendees = computed(() =>
+    this.attendees().filter((attendee) => attendee.status !== 'cancelled')
+  );
+  readonly cancelledAttendees = computed(() =>
+    this.attendees().filter((attendee) => attendee.status === 'cancelled')
+  );
+  readonly visibleAttendees = computed(() =>
+    this.activeTab() === 'active' ? this.activeAttendees() : this.cancelledAttendees()
+  );
   readonly loading = signal(true);
   readonly error = signal('');
 

@@ -137,7 +137,7 @@ export async function listEvents(_req: Request, res: Response, next: NextFunctio
   try {
     const events = await Event.find().populate('createdBy', 'name email avatarUrl').populate('group', 'name city').sort({ createdAt: -1 }).lean();
     const counts = await Enrollment.aggregate([
-      { $match: { event: { $in: events.map((event) => event._id) } } },
+      { $match: { event: { $in: events.map((event) => event._id) }, status: { $ne: 'cancelled' } } },
       { $group: { _id: '$event', count: { $sum: 1 } } }
     ]);
     const countByEvent = new Map(counts.map((entry) => [String(entry['_id']), entry['count'] as number]));

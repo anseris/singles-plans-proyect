@@ -24,7 +24,7 @@ export class EventDetailPage {
   private readonly router = inject(Router);
   private readonly eventsApi = inject(EventsService);
   readonly event = signal<EventDetails | null>(null);
-  readonly canManageEvent = computed(() => this.vm.isAdmin || !!this.event()?.isCreator);
+  readonly canManageEvent = computed(() => !!this.event()?.isCreator);
   readonly loading = signal(true);
   readonly error = signal('');
   readonly attendanceDialogOpen = signal(false);

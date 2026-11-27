@@ -12,22 +12,72 @@
     <div class="attendees-state"><i class="pi pi-spin pi-spinner"></i><span>Cargando asistentes...</span></div>
   } @else if (error()) {
     <div class="attendees-state error"><i class="pi pi-exclamation-circle"></i><span>{{ error() }}</span></div>
-  } @else if (attendees().length) {
-    <div class="attendees-summary">{{ attendees().length }} {{ attendees().length === 1 ? 'persona asistirá' : 'personas asistirán' }}</div>
-    <ul class="attendee-list">
-      @for (attendee of attendees(); track attendee.id) {
-        <li>
-          <app-user-avatar
-            [name]="attendee.name || 'Usuario de SinglesPlans'"
-            [avatarUrl]="attendee.avatarUrl ?? ''"
-            size="small"
-          />
-          <span class="attendee-name">{{ attendee.name || 'Usuario de SinglesPlans' }}</span>
-          <i class="pi pi-check-circle" aria-label="Asistencia confirmada"></i>
-        </li>
-      }
-    </ul>
   } @else {
-    <div class="attendees-state"><i class="pi pi-users"></i><span>Aún no hay personas apuntadas a este evento.</span></div>
+    <div class="attendees-tabs" role="tablist" aria-label="Estado de la asistencia">
+      <button
+        id="attendees-active-tab"
+        type="button"
+        role="tab"
+        aria-controls="attendees-active-panel"
+        [attr.aria-selected]="activeTab() === 'active'"
+        [class.active]="activeTab() === 'active'"
+        (click)="activeTab.set('active')"
+      >
+        Asistentes <span>{{ activeAttendees().length }}</span>
+      </button>
+      <button
+        id="attendees-cancelled-tab"
+        type="button"
+        role="tab"
+        aria-controls="attendees-cancelled-panel"
+        [attr.aria-selected]="activeTab() === 'cancelled'"
+        [class.active]="activeTab() === 'cancelled'"
+        (click)="activeTab.set('cancelled')"
+      >
+        Han cancelado <span>{{ cancelledAttendees().length }}</span>
+      </button>
+    </div>
+
+    <div
+      class="attendees-tab-panel"
+      role="tabpanel"
+      [id]="activeTab() === 'active' ? 'attendees-active-panel' : 'attendees-cancelled-panel'"
+      [attr.aria-labelledby]="activeTab() === 'active' ? 'attendees-active-tab' : 'attendees-cancelled-tab'"
+    >
+      @if (visibleAttendees().length) {
+        <div class="attendees-summary">
+          @if (activeTab() === 'active') {
+            {{ activeAttendees().length }} {{ activeAttendees().length === 1 ? 'persona asistirá' : 'personas asistirán' }}
+          } @else {
+            {{ cancelledAttendees().length }} {{ cancelledAttendees().length === 1 ? 'persona se ha desapuntado' : 'personas se han desapuntado' }}
+          }
+        </div>
+        <ul class="attendee-list">
+          @for (attendee of visibleAttendees(); track attendee.id) {
+            <li>
+              <app-user-avatar
+                [name]="attendee.name || 'Usuario de SinglesPlans'"
+                [avatarUrl]="attendee.avatarUrl ?? ''"
+                size="small"
+              />
+              <span class="attendee-name">{{ attendee.name || 'Usuario de SinglesPlans' }}</span>
+              @if (activeTab() === 'active') {
+                <i class="pi pi-check-circle" aria-label="Asistencia confirmada"></i>
+              } @else {
+                <i class="pi pi-times-circle" aria-label="Asistencia cancelada"></i>
+              }
+            </li>
+          }
+        </ul>
+      } @else {
+        <div class="attendees-state">
+          @if (activeTab() === 'active') {
+            <i class="pi pi-users"></i><span>Aún no hay personas apuntadas a este evento.</span>
+          } @else {
+            <i class="pi pi-times-circle"></i><span>Nadie se ha desapuntado de este evento.</span>
+          }
+        </div>
+      }
+    </div>
   }
 </section>
