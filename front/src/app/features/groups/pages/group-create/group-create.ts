@@ -1,4 +1,4 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -7,15 +7,15 @@ import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
 import { CurrencyPipe } from '@angular/common';
 import { SinglesPlansFacade } from '../../../../core/application/singles-plans.facade';
+import { GroupDetailView } from '../../../../shared/components/group-detail-view/group-detail-view';
 import { RichTextEditor } from '../../../../shared/components/rich-text-editor/rich-text-editor';
-import { RichText } from '../../../../shared/components/rich-text/rich-text';
 import type { GroupItem } from '../../models/group.model';
 import { GroupsService } from '../../data-access/groups.service';
 import { sanitizeRichText } from '../../../../shared/utils/rich-text';
 
 @Component({
   selector: 'app-group-create',
-  imports: [FormsModule, ButtonModule, InputTextModule, CurrencyPipe, RichTextEditor, RichText],
+  imports: [FormsModule, ButtonModule, InputTextModule, CurrencyPipe, RichTextEditor, GroupDetailView],
   templateUrl: './group-create.html',
   styleUrl: './group-create.scss',
 })
@@ -24,6 +24,10 @@ export class GroupCreatePage {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly groupsApi = inject(GroupsService);
+  readonly previewGroup = computed<GroupItem>(() => ({
+    ...this.vm.newGroup,
+    _id: this.editingId() ?? 'vista-previa',
+  }));
   readonly createdGroup = signal<GroupItem | null>(null);
   readonly editingId = signal<string | null>(null);
   readonly loadingEdit = signal(false);

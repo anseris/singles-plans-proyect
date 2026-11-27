@@ -16,61 +16,34 @@
     </div>
   } @else if (group(); as currentGroup) {
     <article class="group-detail-card">
-      @if (currentGroup.imageUrl) {
-        <img
-          class="group-detail-image"
-          [src]="currentGroup.imageUrl"
-          [alt]="'Imagen del grupo ' + currentGroup.name"
-        />
-      } @else {
-        <div class="group-detail-image group-image-placeholder" aria-hidden="true">
-          {{ currentGroup.name.trim().charAt(0).toLocaleUpperCase('es-ES') || '?' }}
-        </div>
-      }
-      <div class="group-detail-content">
-        <p class="eyebrow">GRUPO DE LA COMUNIDAD</p>
-        <h1>{{ currentGroup.name }}</h1>
-        @if (details(); as groupDetails) {
-          <div class="group-detail-meta">
-            <span class="group-organizer">
-              <app-user-avatar
-                [name]="groupDetails.createdByName || 'Organizador de SinglesPlans'"
-                [avatarUrl]="groupDetails.createdByAvatarUrl ?? ''"
-                size="small"
-              />
-              {{ groupDetails.createdByName || 'Organizador de SinglesPlans' }}
-            </span>
-            <span><i class="pi pi-map-marker"></i>{{ currentGroup.city || 'Comunidad online' }}</span>
-            <span>
-              <i class="pi pi-users"></i>
-              {{ groupDetails.memberCount }}
-              {{ groupDetails.memberCount === 1 ? 'miembro apuntado' : 'miembros apuntados' }}
-            </span>
-            @if (currentGroup.ageRange; as ageRange) {
-              <span><i class="pi pi-users"></i>{{ ageRange.min }}–{{ ageRange.max }} años</span>
-            }
-          </div>
-        }
+      <app-group-detail-view
+        [group]="currentGroup"
+        [createdByName]="details()?.createdByName ?? ''"
+        [createdById]="details()?.createdById ?? ''"
+        [memberCount]="details()?.memberCount ?? 0"
+        [eventCount]="(details()?.upcomingEvents?.length ?? 0) + (details()?.pastEvents?.length ?? 0)"
+        (creatorSelected)="openUserInfo($event)"
+      >
         <div class="group-detail-actions">
-          @if (canCreateEvent()) {
-            <p-button label="Crear evento" icon="pi pi-plus" (onClick)="createEvent(currentGroup)" />
-          }
-          @if (canManageGroup()) {
-            <p-button
-              label="Editar grupo"
-              icon="pi pi-pencil"
-              severity="secondary"
-              (onClick)="editGroup(currentGroup)"
-            />
-            <p-button
-              label="Eliminar grupo"
-              icon="pi pi-trash"
-              severity="danger"
-              (onClick)="deleteDialogOpen.set(true); deleteError.set('')"
-            />
-          }
+        @if (canCreateEvent()) {
+          <p-button label="Crear evento" icon="pi pi-plus" (onClick)="createEvent(currentGroup)" />
+        }
+        @if (canManageGroup()) {
+          <p-button
+            label="Editar grupo"
+            icon="pi pi-pencil"
+            severity="secondary"
+            (onClick)="editGroup(currentGroup)"
+          />
+          <p-button
+            label="Eliminar grupo"
+            icon="pi pi-trash"
+            severity="danger"
+            (onClick)="deleteDialogOpen.set(true); deleteError.set('')"
+          />
+        }
         </div>
-      </div>
+      </app-group-detail-view>
     </article>
 
     @if (details(); as groupDetails) {
@@ -97,6 +70,19 @@
         >
           Eventos
         </button>
+        @if (isGroupCreator()) {
+          <button
+            id="group-managed-events-tab"
+            type="button"
+            role="tab"
+            aria-controls="group-managed-events-panel"
+            [attr.aria-selected]="activeTab() === 'managed-events'"
+            [class.active]="activeTab() === 'managed-events'"
+            (click)="activeTab.set('managed-events')"
+          >
+            Mis eventos gestionados <span>{{ managedEvents().length }}</span>
+          </button>
+        }
         <button
           id="group-members-tab"
           type="button"
@@ -210,7 +196,34 @@
             </div>
           }
         </section>
-      } @else {
+      } @else if (activeTab() === 'managed-events') {
+        <section
+          id="group-managed-events-panel"
+          class="group-detail-section group-tab-panel"
+          role="tabpanel"
+          aria-labelledby="group-managed-events-tab"
+        >
+          <div class="group-section-heading">
+            <div>
+              <p class="eyebrow">TUS EVENTOS</p>
+              <h2>Eventos que gestionas en este grupo</h2>
+            </div>
+            <span>{{ managedEvents().length }}</span>
+          </div>
+          @if (managedEvents().length) {
+            <div class="group-events-grid">
+              @for (event of managedEvents(); track event._id) {
+                <app-event-card [event]="event" />
+              }
+            </div>
+          } @else {
+            <div class="group-detail-empty">
+              <i class="pi pi-calendar"></i>
+              <p>Todavía no has creado eventos en este grupo.</p>
+            </div>
+          }
+        </section>
+      } @else if (activeTab() === 'members') {
         <section
           id="group-members-panel"
           class="group-detail-section group-tab-panel group-members-section"
@@ -231,12 +244,15 @@
             <ul class="group-member-list">
               @for (member of groupDetails.members; track member.id) {
                 <li>
-                  <app-user-avatar
-                    [name]="member.name || 'Usuario de SinglesPlans'"
-                    [avatarUrl]="member.avatarUrl ?? ''"
-                    size="small"
-                  />
-                  <span>{{ member.name }}</span>
+                  <button type="button" class="person-button" (click)="openUserInfo(member.id)">
+                    <app-user-avatar
+                      [name]="member.name || 'Usuario de SinglesPlans'"
+                      [avatarUrl]="member.avatarUrl ?? ''"
+                      size="small"
+                    />
+                    <span>{{ member.name }}</span>
+                    <i class="pi pi-arrow-up-right"></i>
+                  </button>
                 </li>
               }
             </ul>
@@ -256,3 +272,5 @@
     </div>
   }
 </section>
+
+<app-user-info [userId]="selectedUserId()" (closed)="selectedUserId.set('')" />

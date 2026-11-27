@@ -1,0 +1,19 @@
+.user-info-profile { display: grid; gap: 18px; max-width: 520px; }
+.user-info-header { display: flex; align-items: center; gap: 16px; }
+.user-info-header h2 { margin: 0 0 4px; color: var(--ink); font: 800 22px Manrope, sans-serif; }
+.user-info-header small { color: var(--muted); font-size: 11px; }
+.user-info-state { display: flex; align-items: center; gap: 10px; padding: 20px 0; color: var(--muted); font-size: 12px; }
+.user-info-data { display: grid; gap: 14px; margin: 0; }
+.user-info-data > div { display: grid; gap: 5px; }
+.user-info-data dt { display: flex; align-items: center; gap: 7px; color: var(--sea); font: 800 11px Manrope, sans-serif; text-transform: uppercase; letter-spacing: .04em; }
+.user-info-data dd { margin: 0; color: var(--ink); font-size: 13px; line-height: 1.5; }
+.user-info-about { white-space: pre-wrap; overflow-wrap: anywhere; }
+.user-info-interests { display: flex; flex-wrap: wrap; gap: 6px; }
+.user-info-interests span { padding: 5px 9px; border-radius: 999px; background: #e7f0ec; color: var(--sea); font-size: 10px; font-weight: 700; }
+.user-info-groups h3 { margin: 0 0 10px; font: 800 14px Manrope, sans-serif; }
+.user-info-groups ul { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.user-info-groups a { display: flex; align-items: center; gap: 8px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 11px; color: var(--ink); text-decoration: none; }
+.user-info-groups a:hover { border-color: var(--sea); }
+.user-info-groups a strong { flex: 1; font-size: 12px; }
+.user-info-groups a small { color: var(--muted); font-size: 11px; }
+.user-info-groups a i { color: var(--sea); }

@@ -12,7 +12,11 @@
 .attendees-tabs button span{display:grid;min-width:21px;height:21px;place-items:center;padding:0 6px;border-radius:999px;background:#e7f0ec;color:var(--sea);font-size:10px}
 .attendees-summary{margin-bottom:10px;color:var(--muted);font-size:11px;font-weight:700}
 .attendee-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:0;padding:0;list-style:none}
-.attendee-list li{display:flex;align-items:center;gap:11px;min-width:0;padding:12px;border:1px solid var(--line);border-radius:13px;background:#fff}
+.attendee-list li{min-width:0;border:1px solid var(--line);border-radius:13px;background:#fff;overflow:hidden}
+.person-button{display:flex;align-items:center;gap:11px;width:100%;min-width:0;padding:12px;border:0;background:transparent;color:inherit;cursor:pointer;font:inherit;text-align:left}
+.person-button:hover{background:#f3f7f3}
+.person-button:focus-visible{outline:2px solid var(--sea);outline-offset:-2px}
+.person-button>i:last-child{color:var(--sea);font-size:11px}
 .attendee-avatar{display:grid;width:40px;height:40px;flex:0 0 40px;place-items:center;border-radius:50%;background:#e7f0ec;color:var(--sea);font:800 15px Manrope,sans-serif}
 .attendee-name{overflow:hidden;flex:1;color:var(--ink);font-size:12px;font-weight:700;text-overflow:ellipsis;white-space:nowrap}
 .attendee-list li>i{color:var(--sea);font-size:14px}

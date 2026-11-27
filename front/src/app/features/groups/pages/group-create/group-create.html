@@ -65,44 +65,20 @@
           </label>
         </fieldset>
       } @else if (!createdGroup()) {
-        <article class="group-preview-card">
-          @if (vm.newGroup.imageUrl) {
-            <img [src]="vm.newGroup.imageUrl" [alt]="vm.newGroup.name" />
-          } @else {
-            <div class="group-preview-placeholder">{{ vm.newGroup.name.trim().charAt(0).toLocaleUpperCase('es-ES') || '?' }}</div>
-          }
-          <div class="group-preview-content">
-            <p class="eyebrow">GRUPO DE LA COMUNIDAD</p>
-            <h2>{{ vm.newGroup.name }}</h2>
-            <p class="group-preview-meta"><i class="pi pi-map-marker"></i>{{ vm.newGroup.city || 'Comunidad online' }}</p>
-            <app-rich-text class="group-preview-description" [html]="vm.newGroup.description" />
-            @if (vm.newGroup.interests.length) {
-              <div class="group-preview-interests">
-                @for (interest of vm.newGroup.interests; track interest) { <span>{{ interest }}</span> }
-              </div>
-            }
-          </div>
-        </article>
+        <div class="group-preview-wrap">
+          <p class="eyebrow">VISTA PREVIA DEL GRUPO</p>
+          <article class="group-preview-card group-detail-card">
+            <app-group-detail-view [group]="previewGroup()" [createdByName]="vm.user()?.name ?? ''" />
+          </article>
+        </div>
       } @else {
         @if (createdGroup(); as group) {
-          <article class="group-preview-card">
-            @if (group.imageUrl) {
-              <img [src]="group.imageUrl" [alt]="group.name" />
-            } @else {
-              <div class="group-preview-placeholder">{{ group.name.trim().charAt(0).toLocaleUpperCase('es-ES') || '?' }}</div>
-            }
-            <div class="group-preview-content">
-              <p class="eyebrow">GRUPO CREADO</p>
-              <h2>{{ group.name }}</h2>
-              <p class="group-preview-meta"><i class="pi pi-map-marker"></i>{{ group.city || 'Comunidad online' }}</p>
-              <app-rich-text class="group-preview-description" [html]="group.description" />
-              @if (group.interests?.length) {
-                <div class="group-preview-interests">
-                  @for (interest of group.interests; track interest) { <span>{{ interest }}</span> }
-                </div>
-              }
-            </div>
-          </article>
+          <div class="group-preview-wrap">
+            <p class="eyebrow">GRUPO CREADO</p>
+            <article class="group-preview-card group-detail-card">
+              <app-group-detail-view [group]="group" [createdByName]="vm.user()?.name ?? ''" />
+            </article>
+          </div>
           <div class="created-group-actions">
             <p-button label="Crear evento" icon="pi pi-plus" type="button" (onClick)="createEvent()" />
             <p-button label="Volver a eventos" icon="pi pi-arrow-right" iconPos="right" severity="secondary" type="button" (onClick)="cancel()" />

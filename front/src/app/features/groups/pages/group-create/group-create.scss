@@ -192,6 +192,9 @@
   opacity: .45;
 }
 
+.group-preview-wrap { display:grid; gap:10px; padding:4px 0 10px; }
+.group-preview-wrap .eyebrow { margin:0; color:var(--sea); font:800 11px Manrope,sans-serif; letter-spacing:.08em; }
+.group-detail-card { display:grid; grid-template-columns:minmax(220px,35%) 1fr; overflow:hidden; border:1px solid var(--line); border-radius:18px; background:white; }
 .group-preview-card {
   display: grid;
   grid-template-columns: minmax(180px, 42%) 1fr;

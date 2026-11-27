@@ -5,15 +5,18 @@ import { firstValueFrom } from 'rxjs';
 import { ButtonModule } from 'primeng/button';
 import { DialogModule } from 'primeng/dialog';
 import type { GroupDetails, GroupItem } from '../../models/group.model';
+import type { EventItem } from '../../../events/models/event.model';
 import { SinglesPlansFacade } from '../../../../core/application/singles-plans.facade';
 import { GroupsService } from '../../data-access/groups.service';
 import { UserAvatar } from '../../../../shared/components/user-avatar/user-avatar';
+import { GroupDetailView } from '../../../../shared/components/group-detail-view/group-detail-view';
+import { UserInfo } from '../../../../shared/components/user-info/user-info';
 import { RichText } from '../../../../shared/components/rich-text/rich-text';
 import { EventCard } from '../../../events/components/event-card/event-card';
 
 @Component({
   selector: 'app-group-detail',
-  imports: [ButtonModule, DialogModule, RouterLink, EventCard, UserAvatar, RichText],
+  imports: [ButtonModule, DialogModule, RouterLink, EventCard, UserAvatar, GroupDetailView, UserInfo, RichText],
   templateUrl: './group-detail.html',
   styleUrl: './group-detail.scss'
 })
@@ -26,11 +29,21 @@ export class GroupDetail {
       this.vm.isAdmin || this.vm.user()?.id === details.createdById
     );
   });
+  readonly isGroupCreator = computed(() => {
+    const details = this.details();
+    return !!details && this.vm.user()?.id === details.createdById;
+  });
+  readonly managedEvents = computed(() => {
+    const group = this.group();
+    if (!group || !this.isGroupCreator()) return [];
+    return this.vm.myEvents().filter((event) => this.eventGroupId(event) === group._id);
+  });
   readonly deleteDialogOpen = signal(false);
   readonly deleteLoading = signal(false);
   readonly deleteError = signal('');
-  readonly activeTab = signal<'about' | 'events' | 'members'>('about');
+  readonly activeTab = signal<'about' | 'events' | 'managed-events' | 'members'>('about');
   readonly eventsTab = signal<'upcoming' | 'past'>('upcoming');
+  readonly selectedUserId = signal('');
   readonly details = signal<GroupDetails | null>(null);
   readonly loading = signal(true);
   readonly error = signal('');
@@ -60,6 +73,14 @@ export class GroupDetail {
     } finally {
       this.loading.set(false);
     }
+  }
+
+  private eventGroupId(event: EventItem): string {
+    return event.groupId ?? event.group?._id ?? '';
+  }
+
+  openUserInfo(id: string): void {
+    this.selectedUserId.set(id);
   }
 
   createEvent(group: GroupItem): void {

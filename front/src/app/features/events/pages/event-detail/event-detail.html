@@ -13,147 +13,7 @@
       <a routerLink="/eventos">Volver a eventos</a>
     </div>
   } @else if (event(); as item) {
-    <div class="event-detail-layout">
-      @if (item.imageUrl) {
-        <img class="detail-cover" [src]="item.imageUrl" [alt]="item.title" />
-      } @else {
-        <div class="detail-cover detail-cover-placeholder" aria-hidden="true">
-          {{ item.title.trim().charAt(0).toLocaleUpperCase('es-ES') || '?' }}
-        </div>
-      }
-
-      <div class="event-heading">
-        <p class="event-type">
-          {{ item.type === 'event' ? 'Evento' : item.type === 'trip' ? 'Viaje' : 'Excursión' }}
-          <span>·</span> {{ item.location }}
-        </p>
-        <h1>{{ item.title }}</h1>
-      </div>
-
-      <div class="detail-fact detail-date">
-        <i class="pi pi-calendar"></i>
-        <span>
-          <strong>Fecha</strong>
-          <small>
-            {{ item.startsAt | date: 'EEEE, d MMM yyyy, HH:mm' : '' : 'es-ES' }}
-            –
-            {{ item.endsAt | date: 'd MMM yyyy, HH:mm' : '' : 'es-ES' }}
-          </small>
-        </span>
-      </div>
-
-      @if (item.group) {
-        <a class="detail-group detail-clickable-card" [routerLink]="['/grupos', item.group._id]">
-          @if (item.group.imageUrl) {
-            <img [src]="item.group.imageUrl" [alt]="item.group.name" />
-          } @else {
-            <span class="detail-group-placeholder" aria-hidden="true">
-              {{ item.group.name.trim().charAt(0).toLocaleUpperCase('es-ES') || '?' }}
-            </span>
-          }
-          <span class="detail-group-copy">
-            <small>Organizado en el grupo</small>
-            <strong>{{ item.group.name }}</strong>
-          </span>
-          <i class="pi pi-arrow-up-right detail-card-arrow"></i>
-        </a>
-      }
-
-      <div class="detail-fact detail-organizer">
-        <app-user-avatar
-          [name]="item.createdBy?.name || 'Comunidad SinglesPlans'"
-          [avatarUrl]="item.createdBy?.avatarUrl ?? ''"
-          size="small"
-        />
-        <span>
-          <strong>Organizador</strong>
-          <small>{{ item.createdBy?.name || 'Comunidad SinglesPlans' }}</small>
-        </span>
-      </div>
-
-      <a
-        class="detail-fact detail-clickable-card detail-meeting-point"
-        [href]="meetingPointMapUrl(item)"
-        target="_blank"
-        rel="noopener noreferrer"
-      >
-        <i class="pi pi-map-marker"></i>
-        <span>
-          <strong>Punto de encuentro</strong>
-          <small>
-            {{ item.meetingPoint?.name || item.location }}
-            @if (item.meetingPoint?.address) {
-              · {{ item.meetingPoint?.address }}
-            }
-          </small>
-        </span>
-        <i class="pi pi-arrow-up-right detail-card-arrow"></i>
-      </a>
-
-      <div class="detail-fact detail-schedule">
-        <i class="pi pi-clock"></i>
-        <span>
-          <strong>Horario</strong>
-          <small>
-            {{
-              item.timeOfDay === 'night'
-                ? 'Noche'
-                : item.timeOfDay === 'all-day'
-                  ? 'Todo el día'
-                  : 'Tarde'
-            }}
-          </small>
-        </span>
-      </div>
-
-      <div class="detail-fact detail-age">
-        <i class="pi pi-users"></i>
-        <span>
-          <strong>Edad</strong>
-          <small>
-            {{
-              item.ageRange
-                ? item.ageRange.min + '–' + item.ageRange.max + ' años'
-                : 'A partir de 18 años'
-            }}
-          </small>
-        </span>
-      </div>
-
-      <div class="detail-fact detail-price">
-        <i class="pi pi-euro"></i>
-        <span>
-          <strong>Precio</strong>
-          <small>
-            {{
-              item.price === 0
-                ? 'Gratis'
-                : (item.price | currency: 'EUR' : 'symbol' : '1.0-2' : 'es-ES')
-            }}
-          </small>
-        </span>
-      </div>
-
-      @if (item.interests?.length) {
-        <div class="detail-interests" aria-label="Intereses">
-          @for (interest of item.interests; track interest) {
-            <span>{{ interest }}</span>
-          }
-        </div>
-      }
-
-      <a
-        class="detail-fact detail-clickable-card detail-attendees"
-        [routerLink]="['/eventos/detalles', item._id, 'asistentes']"
-      >
-        <i class="pi pi-users"></i>
-        <span>
-          <strong>Asistentes</strong>
-          <small>{{ item.enrolledCount ?? 0 }} / {{ item.capacity }} personas</small>
-        </span>
-        <i class="pi pi-arrow-right detail-card-arrow"></i>
-      </a>
-
+    <app-event-detail-view [event]="item" (organizerSelected)="openUserInfo($event)">
       <section class="detail-attendance">
         @if (item.status === 'cancelled') {
           <p-tag value="Evento cancelado" severity="danger" />
@@ -213,12 +73,7 @@
           </div>
         }
       </section>
-
-      <section class="event-description-panel">
-        <h2>Sobre el evento</h2>
-        <app-rich-text class="event-description" [html]="item.description" />
-      </section>
-    </div>
+    </app-event-detail-view>
   } @else {
     <div class="detail-empty">
       <h1>Evento no encontrado</h1>
@@ -226,6 +81,8 @@
     </div>
   }
 </section>
+
+<app-user-info [userId]="selectedUserId()" (closed)="selectedUserId.set('')" />
 
 <p-dialog
   [visible]="attendanceDialogOpen()"

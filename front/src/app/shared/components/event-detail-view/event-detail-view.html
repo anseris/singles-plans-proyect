@@ -1,0 +1,146 @@
+<div class="event-detail-layout">
+  @if (event().imageUrl) {
+    <img class="detail-cover" [src]="event().imageUrl" [alt]="event().title" />
+  } @else {
+    <div class="detail-cover detail-cover-placeholder" aria-hidden="true">
+      {{ event().title.trim().charAt(0).toLocaleUpperCase('es-ES') || '?' }}
+    </div>
+  }
+
+  <div class="event-heading">
+    <p class="event-type">
+      {{ event().type === 'event' ? 'Evento' : event().type === 'trip' ? 'Viaje' : 'Excursión' }}
+      <span>·</span> {{ event().location }}
+    </p>
+    <h1>{{ event().title }}</h1>
+  </div>
+
+  <div class="detail-fact detail-date">
+    <i class="pi pi-calendar"></i>
+    <span>
+      <strong>Fecha</strong>
+      <small>
+        {{ event().startsAt | date: 'EEEE, d MMM yyyy, HH:mm' : '' : 'es-ES' }}
+        –
+        {{ event().endsAt | date: 'd MMM yyyy, HH:mm' : '' : 'es-ES' }}
+      </small>
+    </span>
+  </div>
+
+  @if (event().group; as group) {
+    <a class="detail-group detail-clickable-card" [routerLink]="interactive() ? ['/grupos', group._id] : null">
+      @if (group.imageUrl) {
+        <img [src]="group.imageUrl" [alt]="group.name" />
+      } @else {
+        <span class="detail-group-placeholder" aria-hidden="true">
+          {{ group.name.trim().charAt(0).toLocaleUpperCase('es-ES') || '?' }}
+        </span>
+      }
+      <span class="detail-group-copy">
+        <small>Organizado en el grupo</small>
+        <strong>{{ group.name }}</strong>
+      </span>
+      <i class="pi pi-arrow-up-right detail-card-arrow"></i>
+    </a>
+  }
+
+  @if (interactive() && organizerId()) {
+    <button
+      type="button"
+      class="detail-fact detail-organizer detail-clickable-card"
+      [attr.aria-label]="'Ver información de ' + organizerName()"
+      (click)="openOrganizer()"
+    >
+      <app-user-avatar [name]="organizerName()" [avatarUrl]="event().createdBy?.avatarUrl ?? ''" size="small" />
+      <span>
+        <strong>Organizador</strong>
+        <small>{{ organizerName() }}</small>
+      </span>
+      <i class="pi pi-arrow-up-right detail-card-arrow"></i>
+    </button>
+  } @else {
+    <div class="detail-fact detail-organizer">
+      <app-user-avatar [name]="organizerName()" [avatarUrl]="event().createdBy?.avatarUrl ?? ''" size="small" />
+      <span>
+        <strong>Organizador</strong>
+        <small>{{ organizerName() }}</small>
+      </span>
+    </div>
+  }
+
+  <a
+    class="detail-fact detail-clickable-card detail-meeting-point"
+    [attr.href]="interactive() ? mapUrl() : null"
+    [attr.target]="interactive() ? '_blank' : null"
+    rel="noopener noreferrer"
+  >
+    <i class="pi pi-map-marker"></i>
+    <span>
+      <strong>Punto de encuentro</strong>
+      <small>
+        {{ event().meetingPoint?.name || event().location }}
+        @if (event().meetingPoint?.address) {
+          · {{ event().meetingPoint?.address }}
+        }
+      </small>
+    </span>
+    <i class="pi pi-arrow-up-right detail-card-arrow"></i>
+  </a>
+
+  <div class="detail-fact detail-schedule">
+    <i class="pi pi-clock"></i>
+    <span>
+      <strong>Horario</strong>
+      <small>{{ timeOfDayLabel() }}</small>
+    </span>
+  </div>
+
+  <div class="detail-fact detail-age">
+    <i class="pi pi-users"></i>
+    <span>
+      <strong>Edad</strong>
+      <small>{{ ageRangeLabel() }}</small>
+    </span>
+  </div>
+
+  <div class="detail-fact detail-price">
+    <i class="pi pi-euro"></i>
+    <span>
+      <strong>Precio</strong>
+      <small>
+        {{
+          event().price === 0
+            ? 'Gratis'
+            : (event().price | currency: 'EUR' : 'symbol' : '1.0-2' : 'es-ES')
+        }}
+      </small>
+    </span>
+  </div>
+
+  @if (event().interests?.length) {
+    <div class="detail-interests" aria-label="Intereses">
+      @for (interest of event().interests; track interest) {
+        <span>{{ interest }}</span>
+      }
+    </div>
+  }
+
+  <a
+    class="detail-fact detail-clickable-card detail-attendees"
+    [routerLink]="interactive() ? ['/eventos/detalles', event()._id, 'asistentes'] : null"
+  >
+    <i class="pi pi-users"></i>
+    <span>
+      <strong>Asistentes</strong>
+      <small>{{ event().enrolledCount ?? 0 }} / {{ event().capacity }} personas</small>
+    </span>
+    <i class="pi pi-arrow-right detail-card-arrow"></i>
+  </a>
+
+  <ng-content></ng-content>
+
+  <section class="event-description-panel">
+    <h2>Sobre el evento</h2>
+    <app-rich-text class="event-description" [html]="event().description" />
+  </section>
+</div>

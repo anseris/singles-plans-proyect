@@ -6,6 +6,7 @@ import authRoutes from './routes/auth.routes.js';
 import eventsRoutes from './routes/events.routes.js';
 import groupsRoutes from './routes/groups.routes.js';
 import interestsRoutes from './routes/interests.routes.js';
+import usersRoutes from './routes/users.routes.js';
 
 const app = express();
 
@@ -30,6 +31,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/groups', groupsRoutes);
 app.use('/api/interests', interestsRoutes);
 app.use('/api/events', eventsRoutes);
+app.use('/api/users', usersRoutes);
 app.use('/api/admin', adminRoutes);
 
 app.use((error: unknown, _req: express.Request, res: express.Response, _next: express.NextFunction) => {

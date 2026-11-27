@@ -198,6 +198,7 @@ export class SinglesPlansFacade {
   eventMinimumAge = 18;
   eventMaximumAge = 100;
   readonly eventIsFree = signal(false);
+  private eventPriceBeforeFree = 0;
   readonly groupStepLabels = [
     'Nombre',
     'Zona o ciudad',
@@ -272,6 +273,7 @@ export class SinglesPlansFacade {
     this.eventMinimumAge = 18;
     this.eventMaximumAge = 100;
     this.eventIsFree.set(false);
+    this.eventPriceBeforeFree = 0;
   }
 
   get isAdmin(): boolean {
@@ -913,6 +915,7 @@ export class SinglesPlansFacade {
     this.eventMinimumAge = event.ageRange?.min ?? 18;
     this.eventMaximumAge = event.ageRange?.max ?? 100;
     this.eventIsFree.set(event.price === 0);
+    this.eventPriceBeforeFree = event.price;
     this.eventStep.set(1);
     this.newEventInterestOptions.set(
       (event.interests ?? []).filter(
@@ -1030,8 +1033,14 @@ export class SinglesPlansFacade {
   }
 
   toggleEventFree(isFree: boolean): void {
+    if (isFree === this.eventIsFree()) return;
     this.eventIsFree.set(isFree);
-    if (isFree) this.newEvent.price = 0;
+    if (isFree) {
+      if (this.newEvent.price > 0) this.eventPriceBeforeFree = this.newEvent.price;
+      this.newEvent.price = 0;
+    } else if (this.eventPriceBeforeFree > 0) {
+      this.newEvent.price = this.eventPriceBeforeFree;
+    }
   }
 
   onEventImageSelected(event: Event): void {

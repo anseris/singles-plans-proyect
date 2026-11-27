@@ -2,12 +2,13 @@ import { Component, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { UserAvatar } from '../../../../shared/components/user-avatar/user-avatar';
+import { UserInfo } from '../../../../shared/components/user-info/user-info';
 import { EventsService } from '../../data-access/events.service';
 import type { EventAttendee } from '../../models/event.model';
 
 @Component({
   selector: 'app-event-attendees',
-  imports: [RouterLink, UserAvatar],
+  imports: [RouterLink, UserAvatar, UserInfo],
   templateUrl: './event-attendees.html',
   styleUrl: './event-attendees.scss'
 })
@@ -29,6 +30,11 @@ export class EventAttendeesPage {
   );
   readonly loading = signal(true);
   readonly error = signal('');
+  readonly selectedUserId = signal('');
+
+  openUserInfo(id: string): void {
+    this.selectedUserId.set(id);
+  }
 
   async ngOnInit(): Promise<void> {
     const id = this.route.snapshot.paramMap.get('id');

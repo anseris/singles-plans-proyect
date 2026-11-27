@@ -1,4 +1,3 @@
-import { CurrencyPipe, DatePipe } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
@@ -7,14 +6,14 @@ import { ButtonModule } from 'primeng/button';
 import { DialogModule } from 'primeng/dialog';
 import { TagModule } from 'primeng/tag';
 import { SinglesPlansFacade } from '../../../../core/application/singles-plans.facade';
-import { UserAvatar } from '../../../../shared/components/user-avatar/user-avatar';
-import { RichText } from '../../../../shared/components/rich-text/rich-text';
+import { EventDetailView } from '../../../../shared/components/event-detail-view/event-detail-view';
+import { UserInfo } from '../../../../shared/components/user-info/user-info';
 import { EventsService } from '../../data-access/events.service';
 import type { EventDetails } from '../../models/event.model';
 
 @Component({
   selector: 'app-event-detail',
-  imports: [RouterLink, DatePipe, CurrencyPipe, ButtonModule, DialogModule, TagModule, UserAvatar, RichText],
+  imports: [RouterLink, ButtonModule, DialogModule, TagModule, EventDetailView, UserInfo],
   templateUrl: './event-detail.html',
   styleUrl: './event-detail.scss',
 })
@@ -35,6 +34,7 @@ export class EventDetailPage {
   readonly managementAction = signal<'cancel' | 'delete' | null>(null);
   readonly managementSubmitting = signal(false);
   readonly managementError = signal('');
+  readonly selectedUserId = signal('');
 
   async ngOnInit(): Promise<void> {
     const id = this.route.snapshot.paramMap.get('id');
@@ -58,23 +58,8 @@ export class EventDetailPage {
     }
   }
 
-  meetingPointMapUrl(event: EventDetails): string {
-    const point = event.meetingPoint;
-    const hasCoordinates =
-      point !== undefined &&
-      typeof point.latitude === 'number' &&
-      typeof point.longitude === 'number';
-    const namedQuery = [point?.name, point?.address, event.location].filter(Boolean).join(', ');
-    const query = point?.placeId
-      ? namedQuery
-      : hasCoordinates
-        ? `${point.latitude},${point.longitude}`
-        : namedQuery;
-    const url = new URL('https://www.google.com/maps/search/');
-    url.searchParams.set('api', '1');
-    url.searchParams.set('query', query);
-    if (point?.placeId) url.searchParams.set('query_place_id', point.placeId);
-    return url.toString();
+  openUserInfo(id: string): void {
+    this.selectedUserId.set(id);
   }
 
   requestAttendance(): void {

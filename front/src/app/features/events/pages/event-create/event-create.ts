@@ -1,4 +1,4 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -6,12 +6,12 @@ import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
 import { DialogModule } from 'primeng/dialog';
 import { firstValueFrom } from 'rxjs';
-import { DatePipe } from '@angular/common';
 import { GooglePlaceAutocompleteDirective } from '../../directives/google-place-autocomplete.directive';
 import { SinglesPlansFacade } from '../../../../core/application/singles-plans.facade';
+import { EventDetailView } from '../../../../shared/components/event-detail-view/event-detail-view';
 import { RichTextEditor } from '../../../../shared/components/rich-text-editor/rich-text-editor';
-import { RichText } from '../../../../shared/components/rich-text/rich-text';
 import { EventsService } from '../../data-access/events.service';
+import type { EventItem } from '../../models/event.model';
 
 @Component({
   selector: 'app-event-create',
@@ -20,10 +20,9 @@ import { EventsService } from '../../data-access/events.service';
     ButtonModule,
     InputTextModule,
     DialogModule,
-    DatePipe,
     GooglePlaceAutocompleteDirective,
+    EventDetailView,
     RichTextEditor,
-    RichText,
   ],
   templateUrl: './event-create.html',
   styleUrl: './event-create.scss',
@@ -38,11 +37,23 @@ export class EventCreatePage {
   readonly confirmationMessage = signal('');
   eventInterestDraft = '';
 
-  get previewGroupName(): string {
-    return (
-      this.vm.groups().find((group) => group._id === this.vm.newEvent.groupId)?.name ?? ''
-    );
-  }
+  readonly previewEvent = computed<EventItem>(() => {
+    const draft = this.vm.newEvent;
+    const group = this.vm.groups().find((item) => item._id === draft.groupId) ?? null;
+    const user = this.vm.user();
+    return {
+      ...draft,
+      _id: this.vm.editingId() || 'vista-previa',
+      group,
+      status: 'published',
+      enrolledCount: 0,
+      createdBy: {
+        _id: user?.id ?? '',
+        name: user?.name ?? 'Comunidad SinglesPlans',
+        avatarUrl: user?.avatarUrl ?? '',
+      },
+    };
+  });
 
   ngOnInit(): void {
     const editingId = this.route.snapshot.queryParamMap.get('editar');

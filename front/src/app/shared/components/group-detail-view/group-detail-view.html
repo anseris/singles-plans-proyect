@@ -1,0 +1,40 @@
+@if (group().imageUrl) {
+  <img
+    class="group-detail-image"
+    [src]="group().imageUrl"
+    [alt]="'Imagen del grupo ' + group().name"
+  />
+} @else {
+  <div class="group-detail-image group-image-placeholder" aria-hidden="true">
+    {{ group().name.trim().charAt(0).toLocaleUpperCase('es-ES') || '?' }}
+  </div>
+}
+<div class="group-detail-content">
+  <p class="group-eyebrow">Comunidad SinglesPlans</p>
+  <h1>{{ group().name }}</h1>
+  <div class="group-detail-meta">
+    <span><i class="pi pi-map-marker"></i> {{ group().city }}</span>
+    @if (group().ageRange) {
+      <span><i class="pi pi-users"></i> {{ group().ageRange?.min }}–{{ group().ageRange?.max }} años</span>
+    }
+    @if (createdByName()) {
+      @if (createdById()) {
+        <button type="button" class="group-organizer group-organizer-button" (click)="openCreator()">
+          <i class="pi pi-user"></i> Creado por {{ createdByName() }}
+          <i class="pi pi-arrow-up-right"></i>
+        </button>
+      } @else {
+        <span class="group-organizer"><i class="pi pi-user"></i> Creado por {{ createdByName() }}</span>
+      }
+    }
+    <span><i class="pi pi-users"></i> {{ memberCount() }} miembros</span>
+    <span><i class="pi pi-calendar"></i> {{ eventCount() }} eventos</span>
+  </div>
+  @if (group().interests?.length) {
+    <div class="group-detail-interests">
+      @for (interest of group().interests; track interest) { <span>{{ interest }}</span> }
+    </div>
+  }
+  <app-rich-text class="group-description" [html]="group().description" />
+  <ng-content></ng-content>
+</div>
